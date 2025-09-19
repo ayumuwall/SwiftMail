@@ -1,0 +1,227 @@
+SQLite直接使用の方針を取り込むため、以下の箇所を書き換えます：
+
+## 📝 書き換え箇所と差分
+
+### 1. **データ永続化方針**セクション（アーキテクチャ原則の下）
+
+**現在の記述：**
+```markdown
+<details>
+<summary>データ永続化方針</summary>
+
+  - **Core Data** または **SQLite** を使用する。
+      - **Core Data**: オブジェクトグラフ管理やUndo/Redo機能が求められる場合に検討。
+      - **SQLite**: より軽量で、SQLによる直接的なデータ操作が望ましい場合に検討。
+  - **理由**: 外部依存を避け、macOSネイティブの技術スタックに留めることで、パフォーマンスと長期的なメンテナンス性を確保する。
+  - **推奨**: SQLiteをデフォルト使用。理由: Core Dataより軽量で、SQLクエリが検索/同期に適する。Core DataはUndo/Redoが必要な場合のみ（本プロジェクトでは不要）。
+  - **実装例**: Swift PackageのSQLite.swiftは禁止（外部ライブラリ制約）。FoundationのSQLite3 APIを直接使用。
+
+</details>
+```
+
+**新しい記述：**
+```markdown
+<details>
+<summary>データベース戦略（SQLite直接使用）</summary>
+
+### SQLite直接使用の方針
+- **CoreDataは使用しない**（オーバーヘッドが大きい：起動時50-100ms、メモリ10-15MB）
+- **SQLite3のC APIを薄くラップした独自実装**
+- **外部SQLiteラッパーライブラリ（FMDB、SQLite.swift等）も使用禁止**
+
+### パフォーマンス設定
+```swift
+// MailDatabase.swift
+func optimizeForPerformance() {
+    execute("PRAGMA journal_mode = WAL")        // Write-Ahead Logging
+    execute("PRAGMA synchronous = NORMAL")      // バランスの良い同期モード
+    execute("PRAGMA cache_size = -64000")       // 64MBのキャッシュ
+    execute("PRAGMA temp_store = MEMORY")       // 一時データはメモリに
+    execute("PRAGMA mmap_size = 134217728")     // 128MBのメモリマップ
+}
+```
+
+### 期待されるパフォーマンス
+- DB初期化: ~10-20ms（CoreData比 -80%）
+- メモリ使用: 基本2-5MB + キャッシュ（CoreData比 -70%）
+- 1万件検索: 5-10ms（インデックス使用時）
+
+### データベースファイル
+- 場所: `~/Library/Application Support/SwiftMail/mail.db`
+- バックアップ: 自動で日次バックアップ（最大7世代）
+
+</details>
+```
+
+### 2. **新規追加セクション**（データ同期・キャッシュ戦略の後）
+
+```markdown
+## データベーススキーマ設計
+
+<details>
+<summary>SQLiteテーブル定義</summary>
+
+```sql
+-- アカウント管理
+CREATE TABLE accounts (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    server_type TEXT CHECK(server_type IN ('imap', 'pop3')),
+    imap_host TEXT,
+    imap_port INTEGER DEFAULT 993,
+    smtp_host TEXT,
+    smtp_port INTEGER DEFAULT 587,
+    created_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+
+-- メッセージ保存（共通）
+CREATE TABLE messages (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    message_id TEXT,         -- Message-ID header
+    folder_id TEXT,          -- IMAPのみ、POP3はNULL
+    subject TEXT,
+    sender TEXT,
+    recipients TEXT,         -- JSON array
+    date INTEGER,
+    size INTEGER,
+    headers TEXT,            -- JSON
+    body_plain TEXT,
+    body_html TEXT,
+    is_read INTEGER DEFAULT 0,
+    is_flagged INTEGER DEFAULT 0,
+    is_deleted INTEGER DEFAULT 0,
+    cached_at INTEGER DEFAULT (strftime('%s', 'now')),
+    FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+-- 高速検索用インデックス
+CREATE INDEX idx_messages_date ON messages(date DESC);
+CREATE INDEX idx_messages_unread ON messages(is_read, date DESC) WHERE is_read = 0;
+CREATE INDEX idx_messages_account_folder ON messages(account_id, folder_id);
+
+-- 全文検索（FTS5）
+CREATE VIRTUAL TABLE messages_fts USING fts5(
+    subject, sender, body_plain,
+    content=messages,
+    tokenize='unicode61 remove_diacritics 2'
+);
+
+-- 添付ファイル管理
+CREATE TABLE attachments (
+    id TEXT PRIMARY KEY,
+    message_id TEXT NOT NULL,
+    filename TEXT,
+    mime_type TEXT,
+    size INTEGER,
+    content BLOB,            -- NULL if not downloaded (on-demand)
+    downloaded_at INTEGER,
+    FOREIGN KEY(message_id) REFERENCES messages(id) ON DELETE CASCADE
+);
+
+-- POP3専用：UIDL管理（重複ダウンロード防止）
+CREATE TABLE pop3_uidl (
+    account_id TEXT,
+    uidl TEXT,
+    downloaded_at INTEGER,
+    PRIMARY KEY(account_id, uidl),
+    FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+-- IMAPフォルダー階層
+CREATE TABLE imap_folders (
+    id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    full_path TEXT NOT NULL,
+    parent_id TEXT,
+    uidvalidity INTEGER,
+    uidnext INTEGER,
+    FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+    FOREIGN KEY(parent_id) REFERENCES imap_folders(id) ON DELETE CASCADE
+);
+```
+
+</details>
+
+<details>
+<summary>データベースアクセス層の実装</summary>
+
+```swift
+// MailDatabase.swift - 最小限のラッパー
+import Foundation
+import SQLite3
+
+final class MailDatabase {
+    private let queue = DispatchQueue(label: "com.swiftmail.db", attributes: .concurrent)
+    private var db: OpaquePointer?
+    
+    init(path: String = Self.defaultPath) throws {
+        guard sqlite3_open_v2(path, &db, 
+                              SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX, 
+                              nil) == SQLITE_OK else {
+            throw MailError.databaseError(String(cString: sqlite3_errmsg(db)))
+        }
+        
+        optimizeForPerformance()
+        try createSchema()
+    }
+    
+    private static var defaultPath: String {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, 
+                                              in: .userDomainMask).first!
+        let appDir = support.appendingPathComponent("SwiftMail")
+        try? FileManager.default.createDirectory(at: appDir, 
+                                                withIntermediateDirectories: true)
+        return appDir.appendingPathComponent("mail.db").path
+    }
+    
+    // トランザクション制御
+    func performBatch(_ block: () throws -> Void) rethrows {
+        execute("BEGIN IMMEDIATE TRANSACTION")
+        do {
+            try block()
+            execute("COMMIT")
+        } catch {
+            execute("ROLLBACK")
+            throw error
+        }
+    }
+    
+    // カーソルベースの効率的なストリーミング
+    func streamMessages(limit: Int = 100, offset: Int = 0) -> MessageIterator {
+        let query = "SELECT * FROM messages ORDER BY date DESC LIMIT ? OFFSET ?"
+        var statement: OpaquePointer?
+        sqlite3_prepare_v2(db, query, -1, &statement, nil)
+        sqlite3_bind_int(statement, 1, Int32(limit))
+        sqlite3_bind_int(statement, 2, Int32(offset))
+        
+        return MessageIterator(statement: statement)
+    }
+}
+
+// メモリ効率的なイテレータ
+struct MessageIterator: Sequence, IteratorProtocol {
+    private let statement: OpaquePointer?
+    
+    mutating func next() -> Message? {
+        guard sqlite3_step(statement) == SQLITE_ROW else { 
+            sqlite3_finalize(statement)
+            return nil 
+        }
+        return Message(from: statement)
+    }
+}
+```
+
+</details>
+```
+
+### 3. **依存関係の制約セクションの更新**
+
+**追加する行：**
+```markdown
+- **SQLiteラッパーライブラリ禁止**: FMDB、SQLite.swift等の使用禁止。SQLite3 C APIの直接使用のみ。
+```
+
+これらの変更により、SQLite直接使用の方針が明確になり、CoreDataを避ける理由（起動時間-80%、メモリ-70%削減）も具体的な数値で示されます。また、実装に必要なスキーマとアクセス層のコード例も含まれているため、Claude Codeでの開発時に迷わずに済みます。
