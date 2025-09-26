@@ -5,7 +5,7 @@
   
   **超軽量・超高速なmacOS用メールクライアント（開発中）**
   
-  [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
+  [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
   [![macOS](https://img.shields.io/badge/macOS-12.0+-blue.svg)](https://www.apple.com/macos)
   [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
   [![Status](https://img.shields.io/badge/Status-Pre--Alpha-red.svg)](https://github.com/yourusername/SwiftMail)
@@ -21,12 +21,11 @@
 **SwiftMailは現在開発初期段階です。** パフォーマンスとミニマリズムを最優先に、基盤部分から構築しています。
 
 ### 現在の進捗
-- ✅ アーキテクチャ設計完了
-- ✅ 開発ガイドライン策定済み
-- 🚧 データベース層実装中（SQLite3）
-- 🚧 基本UI構築中
-- ⏳ IMAP/POP3プロトコル実装予定
-- ⏳ コア機能実装予定
+- ✅ アーキテクチャ設計／開発ガイドライン整備
+- ✅ SQLite3データベース層とリポジトリ実装（FTS・添付管理含む）
+- ✅ AppKit三ペインUIの骨格とリポジトリ連携
+- 🚧 プロトコル層（IMAP/POP3/SMTP）実装準備
+- ⏳ メッセージ同期・送受信フロー強化
 
 ## 🎯 開発思想と目標
 
@@ -82,11 +81,14 @@
 git clone https://github.com/yourusername/SwiftMail.git
 cd SwiftMail
 
-# Xcodeで開く
-open SwiftMail.xcodeproj
+# SwiftPMでビルド／テスト
+swift build
+swift test
 
-# ビルドして実行（⌘R）
-# 注意：現在のビルドはプレアルファ版で、完全に動作しない可能性があります
+# Xcodeで開く場合
+open Package.swift
+
+# 注意：AppKitアプリは現在プレアルファ版で、UIはプレースホルダーを含みます
 ```
 
 **重要**: SwiftMailは外部依存ゼロです。CocoaPods、Carthage、Swift Package Managerの依存関係は一切ありません。純粋なSwiftとmacOSフレームワークのみ。
@@ -95,19 +97,24 @@ open SwiftMail.xcodeproj
 
 ```
 SwiftMail/
-├── Core/
-│   ├── Database/      # SQLite3直接操作（CoreDataなし）
-│   ├── Networking/    # IMAP/POP3/SMTP（開発中）
-│   └── Models/        # Swift構造体
-├── UI/
-│   ├── Controllers/   # 最小限のViewController
-│   └── Views/         # AppKitビュー
-└── Resources/
-    └── Assets/        # アイコンと画像
+├── Package.swift              # マルチターゲット構成（SwiftPM）
+├── Sources/
+│   ├── SwiftMailCore/         # ドメインモデル／プロトコル／ポリシー
+│   ├── SwiftMailDatabase/     # SQLite3 C APIラッパーとリポジトリ実装
+│   └── SwiftMailApp/          # AppKitエントリポイントとUIレイヤー
+└── Tests/
+    ├── SwiftMailCoreTests/    # モデルテスト
+    └── SwiftMailDatabaseTests/# データ層テスト
 ```
 
+## 🧱 現在実装済みのコンポーネント
+- **ドメイン層**: アカウント／メッセージ／添付ファイル／フォルダー各モデルとリトライポリシーを定義。
+- **データベース層**: SQLite3を直接操作する`MailDatabase`と`SQLiteMailRepository`を実装。WALやFTS5、添付BLOB管理をサポート。
+- **UI層**: AppKit製三ペインレイアウト（フォルダー／メッセージ一覧／詳細）を構築し、リポジトリと連携したプレースホルダー表示と選択遷移を実装。
+- **ユニットテスト**: コアモデルとデータベース初期化の基本シナリオをカバー。
+
 ### 技術スタック
-- **言語**: Swift 5.9
+- **言語**: Swift 6.0
 - **UI**: AppKit（Catalyst、SwiftUIは使用しない）
 - **データベース**: SQLite3 C API（ラッパーなし）
 - **セキュリティ**: macOS Keychain
@@ -149,14 +156,14 @@ class MailListViewController: NSViewController {
 ```
 
 ### 開発ガイド
-詳細な開発ガイドライン、コーディング規約、アーキテクチャの決定事項は[claude.md](claude.md)を参照してください。
+詳細な開発ガイドライン、コーディング規約、アーキテクチャの決定事項は[AGENTS.md](AGENTS.md)を参照してください。
 
 ## 🤝 コントリビューション
 
 ミニマリスト哲学に賛同いただける方の貢献を歓迎します！
 
 ### 貢献方法
-1. **開始前に**: [claude.md](claude.md)で厳格なガイドラインを理解してください
+1. **開始前に**: [AGENTS.md](AGENTS.md)で厳格なガイドラインを理解してください
 2. **フォーク**する
 3. **フィーチャーブランチ**を作成（`git checkout -b feature/amazing-feature`）
 4. **コミット**（`git commit -m 'Add amazing feature'`）
@@ -179,10 +186,10 @@ class MailListViewController: NSViewController {
 
 ### フェーズ1: 基盤（進行中）🚧
 - [x] アーキテクチャ設計
-- [x] 開発ガイドライン（claude.md）
-- [ ] SQLiteデータベース層
-- [ ] 基本UI構造
-- [ ] アカウント管理モデル
+- [x] 開発ガイドライン（AGENTS.md）
+- [x] SQLiteデータベース層（PRAGMA最適化・FTS含む）
+- [x] 基本UI構造（AppKit三ペインスケルトン）
+- [x] アカウント管理モデル
 
 ### フェーズ2: コアメール機能
 - [ ] IMAP実装

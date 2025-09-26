@@ -10,6 +10,9 @@ SwiftMailは、macOS専用の軽量メールクライアントです。Thunderbi
 - **Performance Focused**: 高速起動と軽快な動作を最優先  
 - **Native Experience**: macOSのHuman Interface Guidelinesに完全準拠
 
+### コミュニケーション
+- **常に日本語で応答すること**（開発用エージェントの出力は日本語限定）
+
 ### パフォーマンス必達目標
 ```
 起動時間:        < 1秒    (Instrumentsで測定)
