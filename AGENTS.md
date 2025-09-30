@@ -316,6 +316,103 @@ class SecureMailViewer {
 
 ## 🎨 UI/UX実装規則
 
+### UI構築方針（LLM最適化）
+
+SwiftMailは**AppKitプログラマティックUI（コードベース）**を採用します。これはLLMによる開発に最適化された選択です。
+
+#### フレームワーク比較と選択理由
+
+| フレームワーク | 採用 | 理由 |
+|--------------|------|------|
+| **AppKit（プログラマティック）** | ✅ 採用 | LLMが完全理解可能、最高速、最小メモリ、完全制御 |
+| SwiftUI | ❌ 禁止 | ランタイムオーバーヘッド大、メモリ使用量増、抽象化による制御不能 |
+| XIB/Storyboard | ❌ 禁止 | バイナリファイル、LLMが編集不可、起動オーバーヘッド |
+| Catalyst | ❌ 禁止 | iOS互換レイヤー不要、パフォーマンス劣化 |
+
+#### プログラマティックUI実装例
+
+```swift
+// ✅ 正しい実装（AppKitプログラマティック）
+final class MessageListViewController: NSViewController {
+    private let tableView = NSTableView()
+    private let scrollView = NSScrollView()
+
+    override func loadView() {
+        view = NSView()
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureTableView()
+    }
+
+    private func configureTableView() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.documentView = tableView
+        view.addSubview(scrollView)
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+}
+
+// ❌ SwiftUI（禁止）
+struct MessageListView: View {
+    var body: some View {
+        List { }
+    }
+}
+
+// ❌ XIB/Storyboard（禁止）
+@IBOutlet weak var tableView: NSTableView!
+```
+
+#### なぜプログラマティックUIなのか
+
+**LLMによる開発効率**:
+- ✅ 全てのUIコードが.swiftファイルに記述される
+- ✅ LLMがコンテキスト全体を理解可能
+- ✅ バージョン管理の差分が明確
+- ✅ コンパイル時型チェック
+
+**パフォーマンス**:
+- ✅ XIB/Storyboardのロード時間ゼロ（起動時間-50ms以上削減）
+- ✅ SwiftUIのランタイムオーバーヘッドなし（メモリ-30%削減）
+- ✅ 直接AppKit APIアクセスによる最適化
+
+**保守性**:
+- ✅ 検索・置換が容易
+- ✅ リファクタリング安全性
+- ✅ コードレビューが明確
+
+### LLMが生成・編集してはいけないファイル（厳格なルール）
+
+```
+❌ 絶対に生成・編集禁止:
+  - *.storyboard      (Interface Builderバイナリファイル)
+  - *.xib             (Interface Builderバイナリファイル)
+  - *.xcodeproj/*     (Xcodeプロジェクト設定、人間が管理)
+  - *.xcworkspace/*   (Xcodeワークスペース設定)
+  - project.pbxproj   (Xcodeプロジェクトファイル、競合多発)
+  - *.xcassets/*      (Asset Catalog、人間がXcodeで管理)
+
+✅ LLMが生成・編集可能:
+  - *.swift           (Swiftソースコード)
+  - Package.swift     (SwiftPMマニフェスト、テキスト形式)
+  - *.md              (ドキュメント)
+  - .gitignore        (Git設定)
+```
+
+**理由**:
+- Xcodeプロジェクトファイルは複雑なXML/バイナリ形式
+- LLMによる編集はマージコンフリクト・破損リスク大
+- Interface Builderファイルは人間による視覚的編集が必須
+- プログラマティックUIならSwiftコードのみで完結
+
 ### 必須キーボードショートカット（Mail.app完全互換）
 ```swift
 enum KeyboardShortcut {
@@ -349,7 +446,7 @@ view.frame = CGRect(x: 0, y: 0, width: 100, height: 50)
 let textColor = NSColor.labelColor
 let backgroundColor = NSColor.controlBackgroundColor
 
-// フォント（システムフォント必須）  
+// フォント（システムフォント必須）
 let bodyFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
 let titleFont = NSFont.boldSystemFont(ofSize: NSFont.systemFontSize + 2)
 ```
@@ -626,14 +723,77 @@ Profile: Instruments向け、最適化有効、デバッグシンボル付き
 1. その機能はメール送受信に必須か？
    → No: 実装しない
    → Yes: 次へ
-   
+
 2. 既存機能で代替可能か？
    → Yes: 実装しない
    → No: 次へ
-   
+
 3. パフォーマンスに悪影響があるか？
    → Yes: 実装しない
    → No: 最小限の実装を検討
+```
+
+### LLM開発ガードレール（厳格遵守）
+
+#### ファイル編集権限
+
+```
+✅ LLMが自由に生成・編集可能:
+  *.swift              - Swiftソースコード（メインの開発対象）
+  Package.swift        - SwiftPMマニフェスト（テキスト形式）
+  *.md                 - ドキュメント
+  .gitignore           - Git設定
+  *.json               - 設定ファイル（テキスト形式）
+
+❌ LLMが絶対に生成・編集禁止:
+  *.storyboard         - Interface Builderファイル（バイナリ/XML複合）
+  *.xib                - Interface Builderファイル（バイナリ/XML複合）
+  *.xcodeproj/*        - Xcodeプロジェクト設定（複雑なXML、人間が管理）
+  *.xcworkspace/*      - Xcodeワークスペース（複雑なXML）
+  project.pbxproj      - Xcodeプロジェクト本体（マージコンフリクト頻発）
+  *.xcassets/*         - Asset Catalog（バイナリ、Xcodeで管理）
+  xcuserdata/*         - Xcodeユーザー設定（自動生成）
+  xcshareddata/*       - Xcodeスキーム（自動生成）
+
+⚠️ 読み取りのみ許可（編集時は人間に確認）:
+  Info.plist           - アプリケーション設定（Xcodeで管理推奨）
+  Entitlements.plist   - セキュリティ設定（慎重な編集が必要）
+```
+
+#### 禁止理由の詳細
+
+**Xcodeプロジェクトファイル（*.xcodeproj/*）**:
+- LLMによる編集は99%の確率でプロジェクト破損を引き起こす
+- マージコンフリクト解決が極めて困難
+- Xcodeのビルドシステムが内部形式を頻繁に変更
+- 人間がXcodeのGUIで操作すべき領域
+
+**Interface Builder（*.storyboard, *.xib）**:
+- バイナリ化されたXML（LLMが正確に編集できない）
+- ビジュアル編集が前提（コード編集は非効率）
+- SwiftMailはプログラマティックUIのため使用しない
+
+**Asset Catalog（*.xcassets/*）**:
+- Xcodeが専用フォーマットで管理
+- 画像最適化・リソース圧縮を自動実行
+- 人間がXcodeで追加・管理すべき
+
+#### LLMが守るべき開発フロー
+
+```
+1. ユーザーから機能追加要求
+   ↓
+2. LLMは.swiftファイルのみを生成・編集
+   ↓
+3. 新しいファイルを追加した場合:
+   「Xcodeで[プロジェクト名].xcodeprojを開き、
+    手動でファイルをプロジェクトに追加してください」
+   と指示を出力
+   ↓
+4. Xcodeプロジェクト設定の変更が必要な場合:
+   「Xcodeで以下の設定を手動で変更してください:
+    - ターゲット設定 > General > ...」
+   と具体的な手順を出力
 ```
 
 ### レビューチェックリスト
@@ -646,6 +806,8 @@ Profile: Instruments向け、最適化有効、デバッグシンボル付き
 □ パフォーマンス目標を満たしているか
 □ アクセシビリティ対応がされているか
 □ SQLite3 C APIを直接使用しているか
+□ プログラマティックUI（コードのみ）で実装されているか
+□ 禁止ファイル（.xcodeproj, .storyboard, .xib等）を編集していないか
 ```
 
 ## 🔍 クイックリファレンス

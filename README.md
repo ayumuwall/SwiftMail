@@ -115,10 +115,53 @@ SwiftMail/
 
 ### 技術スタック
 - **言語**: Swift 6.0
-- **UI**: AppKit（Catalyst、SwiftUIは使用しない）
+- **UI**: AppKit プログラマティックUI（コードのみ、XIB/Storyboard/SwiftUI/Catalyst不使用）
 - **データベース**: SQLite3 C API（ラッパーなし）
 - **セキュリティ**: macOS Keychain
 - **HTML表示**: WebKit（JavaScript無効）
+
+### UI構築方針（LLM最適化）
+
+SwiftMailは**AppKitプログラマティックUI**を採用し、全てのUIをSwiftコードで記述します。
+
+#### なぜプログラマティックUIなのか
+
+| 手法 | 採用 | パフォーマンス | LLM開発効率 | 理由 |
+|------|------|--------------|------------|------|
+| **AppKit（コード）** | ✅ | ⚡️⚡️⚡️ 最速 | 🤖🤖🤖 最適 | 全コードが.swiftファイル、LLMが完全理解 |
+| SwiftUI | ❌ | 🐢 遅い | 🤖🤖 良好 | ランタイムオーバーヘッド、メモリ使用増 |
+| XIB/Storyboard | ❌ | 🐌 起動遅延 | ❌ 編集不可 | バイナリファイル、LLMが扱えない |
+| Catalyst | ❌ | 🐌 劣化 | 🤖 可能 | iOS互換レイヤー不要 |
+
+**プログラマティックUIの実装例**:
+```swift
+// ✅ SwiftMailの実装スタイル
+final class MessageListViewController: NSViewController {
+    private let tableView = NSTableView()
+    private let scrollView = NSScrollView()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.documentView = tableView
+        view.addSubview(scrollView)
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+}
+```
+
+**LLM開発におけるメリット**:
+- ✅ 全UIコードが.swiftファイル内で完結
+- ✅ LLMがコンテキスト全体を把握可能
+- ✅ バージョン管理の差分が明確
+- ✅ XIB/Storyboardのロード時間ゼロ（起動高速化）
+- ✅ SwiftUIの抽象化レイヤーなし（メモリ削減）
 
 ## 📊 パフォーマンス目標
 
