@@ -316,6 +316,13 @@ class SecureMailViewer {
 
 ## 🎨 UI/UX実装規則
 
+### Interface Builderポリシー（新方針）
+- **UI要素はStoryboardまたはXIBで定義すること**。ビューコントローラーではロジックのみに集中し、`loadView()` やフレームベースレイアウトは禁止。
+- 既存の`Main.storyboard`を基点に3ペインレイアウトやテーブルビュー列を調整し、新規画面も必ず`Resources/`配下のStoryboard/XIBで管理する。
+- Auto Layout設定手順: 1) `Add New Constraints`で余白（上下左右0または16pt）を設定、2) `Align`でセンタリングやサイズ制約を追加、3) `Update Frames`→`Resolve Auto Layout Issues`で反映と整合を取る。
+- IBOutlet/IBActionの接続: Connections Inspectorで該当要素をドラッグし、`IBOutlet`はビュー、`IBAction`はアクションメソッドの`action:`に接続する。
+- サイズ・色・フォントなど視覚的パラメータはIBで調整し、コード側は表示切り替えやデータ反映といったロジックに専念する。
+
 ### 必須キーボードショートカット（Mail.app完全互換）
 ```swift
 enum KeyboardShortcut {

@@ -11,7 +11,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let environment = try AppEnvironment.bootstrap()
             self.environment = environment
 
-            let windowController = MainWindowController(environment: environment)
+            let storyboard = NSStoryboard(name: "Main", bundle: .module)
+            guard let windowController = storyboard.instantiateInitialController() as? MainWindowController else {
+                throw NSError(
+                    domain: "SwiftMailApp",
+                    code: 0,
+                    userInfo: [NSLocalizedDescriptionKey: "Main.storyboardの初期ウィンドウを読み込めませんでした"]
+                )
+            }
+            windowController.environment = environment
             windowController.showWindow(self)
             self.windowController = windowController
         } catch {

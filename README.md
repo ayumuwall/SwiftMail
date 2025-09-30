@@ -120,6 +120,11 @@ SwiftMail/
 - **セキュリティ**: macOS Keychain
 - **HTML表示**: WebKit（JavaScript無効）
 
+### Interface BuilderによるUI構築
+- すべての画面要素は`Sources/SwiftMailApp/Resources/Main.storyboard`などのStoryboard/XIB上で定義し、ビューコントローラーはロジックのみを担当します。
+- Auto Layoutは`Add New Constraints`→`Align`→`Update Frames/Resolve Issues`の順で設定し、余白・センタリング・サイズ制約をIBで完結させます。
+- IBOutlet/IBActionはConnections Inspectorで関連ビューやアクションに接続し、サイズ・色・フォントなどの視覚調整もIB側で行います。
+
 ## 📊 パフォーマンス目標
 
 達成を目指す性能指標：

@@ -1,74 +1,82 @@
 import AppKit
+#if TARGET_INTERFACE_BUILDER
+
+class AppEnvironment {}
+class Account {}
+class IMAPFolder {}
+
+@MainActor
+final class MainSplitViewController: NSSplitViewController, FolderListViewControllerDelegate, MessageListViewControllerDelegate {
+    var environment: AppEnvironment?
+}
+
+#else
+
 import SwiftMailCore
 
 @MainActor
 final class MainSplitViewController: NSSplitViewController {
-    private let environment: AppEnvironment
-    private let repository: MailRepository
-
-    private let folderController = FolderListViewController()
-    private let messageListController = MessageListViewController()
-    private let detailController = MessageDetailViewController()
+    var environment: AppEnvironment? {
+        didSet { configureIfReady() }
+    }
 
     private var currentAccount: Account?
     private var currentFolder: IMAPFolder?
+    private var hasLoadedInitialData = false
 
-    init(environment: AppEnvironment) {
-        self.environment = environment
-        self.repository = environment.repository
-        super.init(nibName: nil, bundle: nil)
+    private var folderController: FolderListViewController? {
+        splitViewItems.first?.viewController as? FolderListViewController
     }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    private var messageListController: MessageListViewController? {
+        guard splitViewItems.count > 1 else { return nil }
+        return splitViewItems[1].viewController as? MessageListViewController
+    }
+
+    private var detailController: MessageDetailViewController? {
+        splitViewItems.last?.viewController as? MessageDetailViewController
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         configureSplitView()
-        loadInitialData()
+        configureChildControllers()
+        configureIfReady()
     }
 
     private func configureSplitView() {
         splitView.dividerStyle = .thin
         splitView.isVertical = true
-
-        folderController.delegate = self
-        messageListController.delegate = self
-
-        let folderItem = NSSplitViewItem(sidebarWithViewController: folderController)
-        folderItem.minimumThickness = 220
-
-        let listItem = NSSplitViewItem(viewController: messageListController)
-        listItem.minimumThickness = 360
-
-        let detailItem = NSSplitViewItem(viewController: detailController)
-        detailItem.minimumThickness = 320
-
-        addSplitViewItem(folderItem)
-        addSplitViewItem(listItem)
-        addSplitViewItem(detailItem)
     }
 
-    private func loadInitialData() {
-        folderController.showPlaceholder(text: "フォルダーを読み込み中…")
-        messageListController.setLoadingState()
+    private func configureChildControllers() {
+        folderController?.delegate = self
+        messageListController?.delegate = self
+    }
+
+    private func configureIfReady() {
+        guard !hasLoadedInitialData, isViewLoaded, let repository = environment?.repository else { return }
+        hasLoadedInitialData = true
+        loadInitialData(repository: repository)
+    }
+
+    private func loadInitialData(repository: MailRepository) {
+        folderController?.showPlaceholder(text: "フォルダーを読み込み中…")
+        messageListController?.setLoadingState()
 
         Task { [weak self] in
             guard let self else { return }
             do {
-                let accounts = try await self.repository.fetchAccountsAsync()
+                let accounts = try await repository.fetchAccountsAsync()
                 guard let account = accounts.first else {
-                    await MainActor.run {
-                        self.presentNoAccountState()
-                    }
+                    await MainActor.run { self.presentNoAccountState() }
                     return
                 }
 
-                let folders = try await self.repository.fetchIMAPFoldersAsync(accountID: account.id)
+                let folders = try await repository.fetchIMAPFoldersAsync(accountID: account.id)
                 let normalizedFolders = self.normalizedFolders(for: account, sourceFolders: folders)
                 let initialFolder = normalizedFolders.first
-                let messages = try await self.repository.fetchMessagesAsync(
+                let messages = try await repository.fetchMessagesAsync(
                     accountID: account.id,
                     folderID: initialFolder?.id,
                     limit: 50,
@@ -78,17 +86,17 @@ final class MainSplitViewController: NSSplitViewController {
                 await MainActor.run {
                     self.currentAccount = account
                     self.currentFolder = initialFolder
-                    self.folderController.updateFolders(normalizedFolders)
-                    self.folderController.selectFolder(withID: initialFolder?.id)
-                    self.messageListController.updateMessages(messages)
-                    self.messageListController.selectMessage(withID: messages.first?.id)
-                    self.detailController.display(message: messages.first)
+                    self.folderController?.updateFolders(normalizedFolders)
+                    self.folderController?.selectFolder(withID: initialFolder?.id)
+                    self.messageListController?.updateMessages(messages)
+                    self.messageListController?.selectMessage(withID: messages.first?.id)
+                    self.detailController?.display(message: messages.first)
                 }
             } catch {
                 await MainActor.run {
-                    self.folderController.showPlaceholder(text: "フォルダーの読み込みに失敗しました\n\(error.localizedDescription)")
-                    self.messageListController.showPlaceholder(text: "メッセージの読み込みに失敗しました")
-                    self.detailController.display(message: nil)
+                    self.folderController?.showPlaceholder(text: "フォルダーの読み込みに失敗しました\n\(error.localizedDescription)")
+                    self.messageListController?.showPlaceholder(text: "メッセージの読み込みに失敗しました")
+                    self.detailController?.display(message: nil)
                 }
             }
         }
@@ -108,19 +116,20 @@ final class MainSplitViewController: NSSplitViewController {
     }
 
     private func presentNoAccountState() {
-        folderController.showPlaceholder(text: "アカウントが設定されていません")
-        messageListController.showPlaceholder(text: "アカウントを追加してください")
-        detailController.display(message: nil)
+        folderController?.showPlaceholder(text: "アカウントが設定されていません")
+        messageListController?.showPlaceholder(text: "アカウントを追加してください")
+        detailController?.display(message: nil)
     }
 
     private func loadMessages(for folder: IMAPFolder?) {
         guard let account = currentAccount else { return }
-        messageListController.setLoadingState()
+        messageListController?.setLoadingState()
 
         Task { [weak self] in
             guard let self else { return }
             do {
-                let messages = try await self.repository.fetchMessagesAsync(
+                guard let repository = self.environment?.repository else { return }
+                let messages = try await repository.fetchMessagesAsync(
                     accountID: account.id,
                     folderID: folder?.id,
                     limit: 50,
@@ -128,14 +137,14 @@ final class MainSplitViewController: NSSplitViewController {
                 )
                 await MainActor.run {
                     self.currentFolder = folder
-                    self.messageListController.updateMessages(messages)
-                    self.messageListController.selectMessage(withID: messages.first?.id)
-                    self.detailController.display(message: messages.first)
+                    self.messageListController?.updateMessages(messages)
+                    self.messageListController?.selectMessage(withID: messages.first?.id)
+                    self.detailController?.display(message: messages.first)
                 }
             } catch {
                 await MainActor.run {
-                    self.messageListController.showPlaceholder(text: "メッセージの読み込みに失敗しました")
-                    self.detailController.display(message: nil)
+                    self.messageListController?.showPlaceholder(text: "メッセージの読み込みに失敗しました")
+                    self.detailController?.display(message: nil)
                 }
             }
         }
@@ -150,6 +159,8 @@ extension MainSplitViewController: FolderListViewControllerDelegate {
 
 extension MainSplitViewController: MessageListViewControllerDelegate {
     func messageListViewController(_ controller: MessageListViewController, didSelect message: Message?) {
-        detailController.display(message: message)
+        detailController?.display(message: message)
     }
 }
+
+#endif

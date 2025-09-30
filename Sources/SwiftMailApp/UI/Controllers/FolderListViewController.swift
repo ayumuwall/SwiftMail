@@ -1,4 +1,16 @@
 import AppKit
+#if TARGET_INTERFACE_BUILDER
+
+@MainActor
+protocol FolderListViewControllerDelegate: AnyObject {}
+
+@MainActor
+final class FolderListViewController: NSViewController {
+    weak var delegate: FolderListViewControllerDelegate?
+}
+
+#else
+
 import SwiftMailCore
 
 @MainActor
@@ -10,27 +22,15 @@ protocol FolderListViewControllerDelegate: AnyObject {
 final class FolderListViewController: NSViewController {
     weak var delegate: FolderListViewControllerDelegate?
 
-    private let tableView = NSTableView()
-    private let scrollView = NSScrollView()
-    private let placeholderLabel: NSTextField = {
-        let label = NSTextField(labelWithString: "フォルダーを読み込み中…")
-        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-        label.textColor = NSColor.secondaryLabelColor
-        label.alignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
+    @IBOutlet private weak var tableView: NSTableView!
+    @IBOutlet private weak var scrollView: NSScrollView!
+    @IBOutlet private weak var placeholderLabel: NSTextField!
 
     private var folders: [IMAPFolder] = []
-
-    override func loadView() {
-        view = NSView()
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
-        configureView()
         configureTableView()
+        scrollView.drawsBackground = false
         updatePlaceholderVisibility()
     }
 
@@ -59,42 +59,15 @@ final class FolderListViewController: NSViewController {
         tableView.scrollRowToVisible(row)
     }
 
-    private func configureView() {
-        view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
-
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.documentView = tableView
-        scrollView.hasVerticalScroller = true
-        scrollView.drawsBackground = false
-
-        view.addSubview(scrollView)
-        view.addSubview(placeholderLabel)
-
-        NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            placeholderLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            placeholderLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
-        ])
-    }
-
     private func configureTableView() {
-        tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.delegate = self
         tableView.dataSource = self
         tableView.selectionHighlightStyle = .regular
         tableView.allowsEmptySelection = true
         tableView.usesAlternatingRowBackgroundColors = true
         tableView.headerView = nil
-
-        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("folder"))
-        column.title = "フォルダー"
-        column.resizingMask = .autoresizingMask
-        tableView.addTableColumn(column)
+        tableView.columnAutoresizingStyle = .lastColumnOnly
+        tableView.rowHeight = 36
     }
 
     private func updatePlaceholderVisibility() {
@@ -143,3 +116,5 @@ extension FolderListViewController: NSTableViewDataSource, NSTableViewDelegate {
         }
     }
 }
+
+#endif

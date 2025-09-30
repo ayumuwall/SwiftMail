@@ -1,4 +1,16 @@
 import AppKit
+#if TARGET_INTERFACE_BUILDER
+
+@MainActor
+protocol MessageListViewControllerDelegate: AnyObject {}
+
+@MainActor
+final class MessageListViewController: NSViewController {
+    weak var delegate: MessageListViewControllerDelegate?
+}
+
+#else
+
 import SwiftMailCore
 
 @MainActor
@@ -10,17 +22,9 @@ protocol MessageListViewControllerDelegate: AnyObject {
 final class MessageListViewController: NSViewController {
     weak var delegate: MessageListViewControllerDelegate?
 
-    private let tableView = NSTableView()
-    private let scrollView = NSScrollView()
-    private let placeholderLabel: NSTextField = {
-        let label = NSTextField(labelWithString: "メッセージを読み込み中…")
-        label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-        label.textColor = NSColor.secondaryLabelColor
-        label.alignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.lineBreakMode = .byWordWrapping
-        return label
-    }()
+    @IBOutlet private weak var tableView: NSTableView!
+    @IBOutlet private weak var scrollView: NSScrollView!
+    @IBOutlet private weak var placeholderLabel: NSTextField!
 
     private var messages: [Message] = []
     static let dateFormatter: DateFormatter = {
@@ -30,15 +34,10 @@ final class MessageListViewController: NSViewController {
         formatter.timeStyle = .short
         return formatter
     }()
-
-    override func loadView() {
-        view = NSView()
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
-        configureView()
         configureTableView()
+        scrollView.drawsBackground = false
         updatePlaceholderVisibility()
     }
 
@@ -74,56 +73,29 @@ final class MessageListViewController: NSViewController {
         tableView.scrollRowToVisible(row)
     }
 
-    private func configureView() {
-        view.wantsLayer = true
-        view.layer?.backgroundColor = NSColor.textBackgroundColor.cgColor
-
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.documentView = tableView
-        scrollView.hasVerticalScroller = true
-        scrollView.drawsBackground = false
-
-        view.addSubview(scrollView)
-        view.addSubview(placeholderLabel)
-
-        NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            placeholderLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            placeholderLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            placeholderLabel.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.8)
-        ])
-    }
-
     private func configureTableView() {
-        tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.delegate = self
         tableView.dataSource = self
         tableView.usesAlternatingRowBackgroundColors = true
         tableView.selectionHighlightStyle = .regular
         tableView.rowHeight = 56
+        tableView.columnAutoresizingStyle = .lastColumnOnly
+        adjustColumnSizing()
+    }
 
-        let senderColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("sender"))
-        senderColumn.title = "差出人"
-        senderColumn.width = 180
-        senderColumn.minWidth = 120
-
-        let subjectColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("subject"))
-        subjectColumn.title = "件名"
-        subjectColumn.minWidth = 260
-
-        let dateColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("date"))
-        dateColumn.title = "日付"
-        dateColumn.width = 140
-        dateColumn.minWidth = 100
-        dateColumn.maxWidth = 160
-
-        tableView.addTableColumn(senderColumn)
-        tableView.addTableColumn(subjectColumn)
-        tableView.addTableColumn(dateColumn)
+    private func adjustColumnSizing() {
+        if let senderColumn = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("sender")) {
+            senderColumn.minWidth = 120
+            senderColumn.width = 180
+        }
+        if let subjectColumn = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("subject")) {
+            subjectColumn.minWidth = 260
+        }
+        if let dateColumn = tableView.tableColumn(withIdentifier: NSUserInterfaceItemIdentifier("date")) {
+            dateColumn.minWidth = 100
+            dateColumn.maxWidth = 160
+            dateColumn.width = 140
+        }
     }
 
     private func updatePlaceholderVisibility() {
@@ -200,3 +172,5 @@ extension MessageListViewController: NSTableViewDataSource, NSTableViewDelegate 
         }
     }
 }
+
+#endif

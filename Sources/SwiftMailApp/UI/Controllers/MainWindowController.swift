@@ -1,24 +1,32 @@
 import AppKit
+#if TARGET_INTERFACE_BUILDER
 
 @MainActor
 final class MainWindowController: NSWindowController {
-    private let environment: AppEnvironment
+    var environment: AppEnvironment?
+}
 
-    init(environment: AppEnvironment) {
-        self.environment = environment
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1100, height: 720),
-            styleMask: [.titled, .closable, .resizable, .miniaturizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = "SwiftMail"
-        window.center()
-        super.init(window: window)
-        window.contentViewController = MainSplitViewController(environment: environment)
+#else
+
+@MainActor
+final class MainWindowController: NSWindowController {
+    var environment: AppEnvironment? {
+        didSet { propagateEnvironment() }
     }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+    override func windowDidLoad() {
+        super.windowDidLoad()
+        window?.title = "SwiftMail"
+        window?.center()
+        propagateEnvironment()
+    }
+
+    private func propagateEnvironment() {
+        guard let environment, let splitController = contentViewController as? MainSplitViewController else {
+            return
+        }
+        splitController.environment = environment
     }
 }
+
+#endif

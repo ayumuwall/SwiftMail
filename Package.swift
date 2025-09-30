@@ -32,6 +32,9 @@ let package = Package(
             dependencies: [
                 "SwiftMailCore",
                 "SwiftMailDatabase"
+            ],
+            resources: [
+                .process("Resources")
             ]
         ),
         .testTarget(
