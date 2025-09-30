@@ -1,0 +1,696 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1F7D94A92752B2F400000101 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000001 /* AppDelegate.swift */; };
+		1F7D94A92752B2F400000102 /* AppEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000002 /* AppEnvironment.swift */; };
+		1F7D94A92752B2F400000103 /* MainSplitViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000003 /* MainSplitViewController.swift */; };
+		1F7D94A92752B2F400000104 /* AccountSidebarViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000004 /* AccountSidebarViewController.swift */; };
+		1F7D94A92752B2F400000105 /* MessageListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000005 /* MessageListViewController.swift */; };
+		1F7D94A92752B2F400000106 /* MessageDetailViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000006 /* MessageDetailViewController.swift */; };
+		1F7D94A92752B2F400000107 /* Account.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000007 /* Account.swift */; };
+		1F7D94A92752B2F400000108 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000008 /* Message.swift */; };
+		1F7D94A92752B2F400000109 /* MailFolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000009 /* MailFolder.swift */; };
+		1F7D94A92752B2F40000010A /* MailRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F40000000A /* MailRepository.swift */; };
+		1F7D94A92752B2F40000010B /* MailSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F40000000B /* MailSyncCoordinator.swift */; };
+		1F7D94A92752B2F40000010C /* MailDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F40000000C /* MailDatabase.swift */; };
+		1F7D94A92752B2F40000010D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F40000000E /* Main.storyboard */; };
+		1F7D94A92752B2F40000010E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F40000000F /* Assets.xcassets */; };
+		1F7D94A92752B2F40000010F /* SwiftMailTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000011 /* SwiftMailTests.swift */; };
+		1F7D94A92752B2F400000110 /* SwiftMailUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F7D94A92752B2F400000013 /* SwiftMailUITests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1F7D94A92752B2F400000150 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1F7D94A92752B2F400000100 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1F7D94A92752B2F400000120;
+			remoteInfo = SwiftMail;
+		};
+		1F7D94A92752B2F400000151 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1F7D94A92752B2F400000100 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1F7D94A92752B2F400000120;
+			remoteInfo = SwiftMail;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1F7D94A92752B2F400000001 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000002 /* AppEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppEnvironment.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000003 /* MainSplitViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainSplitViewController.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000004 /* AccountSidebarViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSidebarViewController.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000005 /* MessageListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListViewController.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000006 /* MessageDetailViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageDetailViewController.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000007 /* Account.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Account.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000008 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000009 /* MailFolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailFolder.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F40000000A /* MailRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailRepository.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F40000000B /* MailSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailSyncCoordinator.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F40000000C /* MailDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MailDatabase.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F40000000D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		1F7D94A92752B2F40000000E /* Main.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = Main.storyboard; sourceTree = "<group>"; };
+		1F7D94A92752B2F40000000F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000010 /* SwiftMail.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SwiftMail.entitlements; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000011 /* SwiftMailTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftMailTests.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000013 /* SwiftMailUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftMailUITests.swift; sourceTree = "<group>"; };
+		1F7D94A92752B2F400000200 /* SwiftMail.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftMail.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F7D94A92752B2F400000201 /* SwiftMailTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftMailTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F7D94A92752B2F400000202 /* SwiftMailUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftMailUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1F7D94A92752B2F400000130 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1F7D94A92752B2F400000131 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1F7D94A92752B2F400000132 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1F7D94A92752B2F400000140 = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000210 /* SwiftMail */,
+				1F7D94A92752B2F400000220 /* Application */,
+				1F7D94A92752B2F400000230 /* UI */,
+				1F7D94A92752B2F400000240 /* SwiftMailCore */,
+				1F7D94A92752B2F400000250 /* SwiftMailDatabase */,
+				1F7D94A92752B2F400000260 /* SwiftMailTests */,
+				1F7D94A92752B2F400000270 /* SwiftMailUITests */,
+				1F7D94A92752B2F400000280,
+				1F7D94A92752B2F400000290,
+			);
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000210 /* SwiftMail */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000214 /* Resources */,
+				1F7D94A92752B2F400000215 /* Supporting Files */,
+			);
+			path = SwiftMail;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000214 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F40000000F /* Assets.xcassets */,
+				1F7D94A92752B2F40000000E /* Main.storyboard */,
+				1F7D94A92752B2F40000000D /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000215 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000010 /* SwiftMail.entitlements */,
+			);
+			path = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000220 /* Application */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000001 /* AppDelegate.swift */,
+				1F7D94A92752B2F400000002 /* AppEnvironment.swift */,
+			);
+			path = Application;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000230 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000231 /* ViewControllers */,
+				1F7D94A92752B2F400000232 /* Views */,
+				1F7D94A92752B2F400000233 /* Extensions */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000231 /* ViewControllers */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000003 /* MainSplitViewController.swift */,
+				1F7D94A92752B2F400000004 /* AccountSidebarViewController.swift */,
+				1F7D94A92752B2F400000005 /* MessageListViewController.swift */,
+				1F7D94A92752B2F400000006 /* MessageDetailViewController.swift */,
+			);
+			path = ViewControllers;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000232 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000233 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000240 /* SwiftMailCore */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000241 /* Models */,
+				1F7D94A92752B2F400000242 /* Services */,
+				1F7D94A92752B2F400000243 /* Protocols */,
+			);
+			path = SwiftMailCore;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000241 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000007 /* Account.swift */,
+				1F7D94A92752B2F400000008 /* Message.swift */,
+				1F7D94A92752B2F400000009 /* MailFolder.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000242 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F40000000B /* MailSyncCoordinator.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000243 /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F40000000A /* MailRepository.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000250 /* SwiftMailDatabase */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000251 /* SQLite */,
+			);
+			path = SwiftMailDatabase;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000251 /* SQLite */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F40000000C /* MailDatabase.swift */,
+			);
+			path = SQLite;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000260 /* SwiftMailTests */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000011 /* SwiftMailTests.swift */,
+			);
+			path = SwiftMailTests;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000270 /* SwiftMailUITests */ = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000013 /* SwiftMailUITests.swift */,
+			);
+			path = SwiftMailUITests;
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000280 = {
+			isa = PBXGroup;
+			children = (
+				1F7D94A92752B2F400000200 /* SwiftMail.app */,
+				1F7D94A92752B2F400000201 /* SwiftMailTests.xctest */,
+				1F7D94A92752B2F400000202 /* SwiftMailUITests.xctest */,
+			);
+			sourceTree = "<group>";
+		};
+		1F7D94A92752B2F400000290 = {
+			isa = PBXGroup;
+			children = (
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1F7D94A92752B2F400000120 /* SwiftMail */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1F7D94A92752B2F400000180 /* Build configuration list for PBXNativeTarget "SwiftMail" */;
+			buildPhases = (
+				1F7D94A92752B2F40000012D /* Sources */,
+				1F7D94A92752B2F400000130 /* Frameworks */,
+				1F7D94A92752B2F40000012E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SwiftMail;
+			productName = SwiftMail;
+			productReference = 1F7D94A92752B2F400000200 /* SwiftMail.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1F7D94A92752B2F400000121 /* SwiftMailTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1F7D94A92752B2F400000181 /* Build configuration list for PBXNativeTarget "SwiftMailTests" */;
+			buildPhases = (
+				1F7D94A92752B2F40000012F /* Sources */,
+				1F7D94A92752B2F400000131 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1F7D94A92752B2F400000152 /* PBXTargetDependency */,
+			);
+			name = SwiftMailTests;
+			productName = SwiftMailTests;
+			productReference = 1F7D94A92752B2F400000201 /* SwiftMailTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		1F7D94A92752B2F400000122 /* SwiftMailUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1F7D94A92752B2F400000182 /* Build configuration list for PBXNativeTarget "SwiftMailUITests" */;
+			buildPhases = (
+				1F7D94A92752B2F40000012C /* Sources */,
+				1F7D94A92752B2F400000132 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1F7D94A92752B2F400000153 /* PBXTargetDependency */,
+			);
+			name = SwiftMailUITests;
+			productName = SwiftMailUITests;
+			productReference = 1F7D94A92752B2F400000202 /* SwiftMailUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1F7D94A92752B2F400000100 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1510;
+				ORGANIZATIONNAME = SwiftMail;
+				TargetAttributes = {
+					1F7D94A92752B2F400000121 = {
+						TestTargetID = 1F7D94A92752B2F400000120;
+					};
+					1F7D94A92752B2F400000122 = {
+						TestTargetID = 1F7D94A92752B2F400000120;
+					};
+				};
+			};
+			buildConfigurationList = 1F7D94A92752B2F400000170 /* Build configuration list for PBXProject "SwiftMail" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1F7D94A92752B2F400000140;
+			productRefGroup = 1F7D94A92752B2F400000280;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1F7D94A92752B2F400000120 /* SwiftMail */,
+				1F7D94A92752B2F400000121 /* SwiftMailTests */,
+				1F7D94A92752B2F400000122 /* SwiftMailUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1F7D94A92752B2F40000012E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F7D94A92752B2F40000010D /* Main.storyboard in Resources */,
+				1F7D94A92752B2F40000010E /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1F7D94A92752B2F40000012C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F7D94A92752B2F400000110 /* SwiftMailUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1F7D94A92752B2F40000012D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F7D94A92752B2F400000106 /* MessageDetailViewController.swift in Sources */,
+				1F7D94A92752B2F400000105 /* MessageListViewController.swift in Sources */,
+				1F7D94A92752B2F40000010B /* MailSyncCoordinator.swift in Sources */,
+				1F7D94A92752B2F400000109 /* MailFolder.swift in Sources */,
+				1F7D94A92752B2F40000010C /* MailDatabase.swift in Sources */,
+				1F7D94A92752B2F40000010A /* MailRepository.swift in Sources */,
+				1F7D94A92752B2F400000102 /* AppEnvironment.swift in Sources */,
+				1F7D94A92752B2F400000103 /* MainSplitViewController.swift in Sources */,
+				1F7D94A92752B2F400000104 /* AccountSidebarViewController.swift in Sources */,
+				1F7D94A92752B2F400000108 /* Message.swift in Sources */,
+				1F7D94A92752B2F400000101 /* AppDelegate.swift in Sources */,
+				1F7D94A92752B2F400000107 /* Account.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1F7D94A92752B2F40000012F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F7D94A92752B2F40000010F /* SwiftMailTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1F7D94A92752B2F400000152 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1F7D94A92752B2F400000120 /* SwiftMail */;
+			targetProxy = 1F7D94A92752B2F400000150 /* PBXContainerItemProxy */;
+		};
+		1F7D94A92752B2F400000153 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1F7D94A92752B2F400000120 /* SwiftMail */;
+			targetProxy = 1F7D94A92752B2F400000151 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1F7D94A92752B2F400000190 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		1F7D94A92752B2F400000191 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		1F7D94A92752B2F400000192 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "SwiftMail/Supporting Files/SwiftMail.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q9CM4C478R;
+				INFOPLIST_FILE = SwiftMail/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiftmail.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		1F7D94A92752B2F400000193 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "SwiftMail/Supporting Files/SwiftMail.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q9CM4C478R;
+				INFOPLIST_FILE = SwiftMail/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiftmail.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		1F7D94A92752B2F400000194 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_KEY_CFBundleIdentifier = com.swiftmail.appTests;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiftmail.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SwiftMail.app/Contents/MacOS/SwiftMail";
+			};
+			name = Debug;
+		};
+		1F7D94A92752B2F400000195 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_KEY_CFBundleIdentifier = com.swiftmail.appTests;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiftmail.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SwiftMail.app/Contents/MacOS/SwiftMail";
+			};
+			name = Release;
+		};
+		1F7D94A92752B2F400000196 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_KEY_CFBundleIdentifier = com.swiftmail.appUITests;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiftmail.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_TARGET_NAME = SwiftMail;
+			};
+			name = Debug;
+		};
+		1F7D94A92752B2F400000197 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_KEY_CFBundleIdentifier = com.swiftmail.appUITests;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiftmail.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.9;
+				TEST_TARGET_NAME = SwiftMail;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1F7D94A92752B2F400000170 /* Build configuration list for PBXProject "SwiftMail" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F7D94A92752B2F400000190 /* Debug */,
+				1F7D94A92752B2F400000191 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1F7D94A92752B2F400000180 /* Build configuration list for PBXNativeTarget "SwiftMail" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F7D94A92752B2F400000192 /* Debug */,
+				1F7D94A92752B2F400000193 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1F7D94A92752B2F400000181 /* Build configuration list for PBXNativeTarget "SwiftMailTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F7D94A92752B2F400000194 /* Debug */,
+				1F7D94A92752B2F400000195 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1F7D94A92752B2F400000182 /* Build configuration list for PBXNativeTarget "SwiftMailUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1F7D94A92752B2F400000196 /* Debug */,
+				1F7D94A92752B2F400000197 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1F7D94A92752B2F400000100 /* Project object */;
+}

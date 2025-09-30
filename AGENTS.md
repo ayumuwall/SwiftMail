@@ -219,8 +219,35 @@ enum SyncStrategy {
 // IMAP: UID FETCHで差分同期、FLAGSで既読管理
 ```
 
-## 📂 ファイルシステム構造
+## 📂 プロジェクト構造
+
+### Xcodeプロジェクト構成
 ```
+SwiftMail/
+├── SwiftMail.xcodeproj/              # Xcodeプロジェクトファイル
+├── SwiftMail/                         # メインアプリターゲット
+│   ├── Resources/                     # リソースファイル
+│   │   ├── Main.storyboard           # メインUI定義
+│   │   ├── Assets.xcassets           # 画像・アイコン
+│   │   └── Info.plist                # アプリ設定
+│   ├── Supporting Files/              # 補助ファイル
+│   │   └── SwiftMail.entitlements    # サンドボックス設定
+├── Application/                       # アプリケーション層
+│   ├── AppDelegate.swift             # アプリライフサイクル
+│   └── AppEnvironment.swift          # 依存性注入
+├── UI/                                # UIレイヤー
+│   ├── ViewControllers/              # ビューコントローラー
+│   ├── Views/                        # カスタムビュー
+│   └── Extensions/                   # UI拡張
+├── SwiftMailCore/                     # コアロジック層
+│   ├── Models/                       # データモデル
+│   ├── Services/                     # ビジネスロジック
+│   └── Protocols/                    # プロトコル定義
+├── SwiftMailDatabase/                 # データベース層
+│   └── SQLite/                       # SQLite直接操作
+├── SwiftMailTests/                    # ユニットテスト
+└── SwiftMailUITests/                  # UIテスト
+
 ~/Library/Application Support/SwiftMail/
 ├── mail.db                  # SQLiteデータベース
 ├── mail.db-wal              # WALファイル
@@ -232,7 +259,7 @@ enum SyncStrategy {
 ~/Library/Preferences/
 └── com.swiftmail.plist      # 設定（機密情報以外）
 
-Keychain: 
+Keychain:
 └── パスワード、認証トークン等
 ```
 
@@ -319,9 +346,58 @@ class SecureMailViewer {
 ### Interface Builderポリシー（新方針）
 - **UI要素はStoryboardまたはXIBで定義すること**。ビューコントローラーではロジックのみに集中し、`loadView()` やフレームベースレイアウトは禁止。
 - 既存の`Main.storyboard`を基点に3ペインレイアウトやテーブルビュー列を調整し、新規画面も必ず`Resources/`配下のStoryboard/XIBで管理する。
-- Auto Layout設定手順: 1) `Add New Constraints`で余白（上下左右0または16pt）を設定、2) `Align`でセンタリングやサイズ制約を追加、3) `Update Frames`→`Resolve Auto Layout Issues`で反映と整合を取る。
-- IBOutlet/IBActionの接続: Connections Inspectorで該当要素をドラッグし、`IBOutlet`はビュー、`IBAction`はアクションメソッドの`action:`に接続する。
 - サイズ・色・フォントなど視覚的パラメータはIBで調整し、コード側は表示切り替えやデータ反映といったロジックに専念する。
+
+### Storyboard/XIBハイブリッド戦略
+このアプリのエンドユーザーは人間であるため、UI開発においては、人間が調整しやすいInterface Builderで確認できるようにする。
+
+- メインフローは Storyboard - 全体像の把握が容易
+- 再利用コンポーネントは XIB - 保守性と効率性を確保
+- 機能ごとに Storyboard を分割 - チーム開発での競合を最小化
+
+この方針により、プロジェクトは視覚的なわかりやすさと実装の効率性を両立できる。
+Interface Builderの利点を最大限活用しつつ、スケーラビリティも確保できる。
+
+```swift
+// プロジェクト構造例
+SwiftMail/
+├── Resources/
+│   ├── Main.storyboard           // メインフロー（3ペインレイアウト）
+│   ├── Onboarding.storyboard     // オンボーディング専用
+│   └── Views/
+│       ├── ComposeView.xib       // 作成画面（再利用可能）
+│       ├── MessageCell.xib       // カスタムセル
+│       └── AttachmentView.xib    // 添付ファイルビュー
+```
+
+実装例
+
+Storyboard でメインフロー定義：
+```swift
+// Main.storyboard内で3ペインレイアウトを構築
+class MainViewController: UISplitViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Storyboardで定義されたレイアウトを活用
+        preferredDisplayMode = .allVisible
+    }
+}
+```
+
+XIB でカスタムビュー作成：
+```swift
+// ComposeView.xib と連携
+class ComposeView: UIView {
+    @IBOutlet weak var toField: UITextField!
+    @IBOutlet weak var subjectField: UITextField!
+    @IBOutlet weak var bodyTextView: UITextView!
+    
+    static func instantiate() -> ComposeView {
+        let nib = UINib(nibName: "ComposeView", bundle: nil)
+        return nib.instantiate(withOwner: nil, options: nil)[0] as! ComposeView
+    }
+}
+```
 
 ### 必須キーボードショートカット（Mail.app完全互換）
 ```swift
@@ -521,9 +597,10 @@ Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { _ in
 
 ### Phase 1: 基盤（最優先）
 ```
-□ AppDelegate、MainWindowController
+✅ Xcodeプロジェクトの作成とInterface Builder構成
+✅ AppDelegate、MainWindowController
+✅ Main.storyboardによる基本3ペインレイアウト
 □ SQLiteデータベース層（スキーマ、最適化）
-□ 基本3ペインレイアウト
 □ データモデル（Account、Message、Folder）
 □ Keychainアクセス層
 ```

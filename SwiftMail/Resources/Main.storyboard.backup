@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="23727" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="MainWindowController">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="23727"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Main Window Controller-->
+        <scene sceneID="MainWindowScene">
+            <objects>
+                <windowController storyboardIdentifier="MainWindowController" id="MainWindowController" sceneMemberID="viewController">
+                    <window key="window" title="SwiftMail" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="YES" releasedWhenClosed="NO" animationBehavior="default" titleVisibility="hidden" id="MainWindow">
+                        <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" unifiedTitleAndToolbar="YES"/> 
+                        <rect key="contentRect" x="0.0" y="0.0" width="1200" height="720"/>
+                        <rect key="screenRect" x="0.0" y="0.0" width="1440" height="900"/>
+                    </window>
+                    <connections>
+                        <outlet property="contentViewController" destination="MainSplitViewController" id="MainWindowContentConnection"/>
+                    </connections>
+                </windowController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="MainWindowFirstResponder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+        <!--Main Split View Controller-->
+        <scene sceneID="MainSplitScene">
+            <objects>
+                <splitViewController storyboardIdentifier="MainSplitViewController" id="MainSplitViewController" customClass="MainSplitViewController" customModule="SwiftMail" sceneMemberID="viewController">
+                    <splitView key="splitView" dividerStyle="thin" vertical="YES" id="MainSplitView">
+                        <rect key="frame" x="0.0" y="0.0" width="1200" height="720"/>
+                    </splitView>
+                    <splitViewItems>
+                        <splitViewItem identifier="SidebarItem" behavior="sidebar" id="SidebarItem" viewController="AccountSidebarViewController"/>
+                        <splitViewItem identifier="MessageListItem" id="MessageListItem" holdingPriority="250" viewController="MessageListViewController"/>
+                        <splitViewItem identifier="MessageDetailItem" id="MessageDetailItem" holdingPriority="200" viewController="MessageDetailViewController"/>
+                    </splitViewItems>
+                </splitViewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="MainSplitFirstResponder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+        <!--Account Sidebar View Controller-->
+        <scene sceneID="AccountSidebarScene">
+            <objects>
+                <viewController storyboardIdentifier="AccountSidebarViewController" id="AccountSidebarViewController" customClass="AccountSidebarViewController" customModule="SwiftMail" sceneMemberID="viewController">
+                    <view key="view" wantsLayer="YES" id="AccountSidebarView">
+                        <rect key="frame" x="0.0" y="0.0" width="220" height="720"/>
+                        <subviews>
+                            <scrollView autohidesScrollers="YES" horizontalLineScroll="32" horizontalPageScroll="10" verticalLineScroll="32" verticalPageScroll="10" translatesAutoresizingMaskIntoConstraints="NO" id="AccountSidebarScroll">
+                                <rect key="frame" x="0.0" y="0.0" width="220" height="720"/>
+                                <clipView key="contentView" drawsBackground="NO" id="AccountSidebarClip">
+                                    <rect key="frame" x="0.0" y="0.0" width="220" height="720"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <subviews>
+                                        <outlineView allowsColumnReordering="NO" allowsColumnResizing="NO" allowsColumnSelection="NO" headerView="AccountSidebarHeader" rowSizeStyle="small" columnAutoresizingStyle="lastColumnOnly" selectionHighlightStyle="sourceList" translatesAutoresizingMaskIntoConstraints="NO" id="AccountSidebarOutline">
+                                            <rect key="frame" x="0.0" y="0.0" width="220" height="720"/>
+                                            <size key="intercellSpacing" width="4" height="2"/>
+                                            <tableColumns>
+                                                <tableColumn width="220" minWidth="200" maxWidth="400" id="AccountSidebarColumn">
+                                                    <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border">
+                                                        <font key="font" metaFont="system"/>
+                                                    </tableHeaderCell>
+                                                    <textFieldCell key="dataCell" lineBreakMode="truncatingTail" selectable="YES" editable="YES" title="Text Cell" id="AccountSidebarCell">
+                                                        <font key="font" metaFont="system"/>
+                                                    </textFieldCell>
+                                                </tableColumn>
+                                            </tableColumns>
+                                        </outlineView>
+                                    </subviews>
+                                    <constraints>
+                                        <constraint firstItem="AccountSidebarOutline" firstAttribute="leading" secondItem="AccountSidebarClip" secondAttribute="leading" id="AccountSidebarOutlineLeading"/>
+                                        <constraint firstItem="AccountSidebarOutline" firstAttribute="trailing" secondItem="AccountSidebarClip" secondAttribute="trailing" id="AccountSidebarOutlineTrailing"/>
+                                        <constraint firstItem="AccountSidebarOutline" firstAttribute="top" secondItem="AccountSidebarClip" secondAttribute="top" id="AccountSidebarOutlineTop"/>
+                                        <constraint firstAttribute="bottom" secondItem="AccountSidebarOutline" secondAttribute="bottom" id="AccountSidebarOutlineBottom"/>
+                                    </constraints>
+                                </clipView>
+                                <scroller key="horizontalScroller" horizontal="YES" id="AccountSidebarHorizontalScroller" hidden="YES"/>
+                                <scroller key="verticalScroller" vertical="YES" id="AccountSidebarVerticalScroller"/>
+                                <tableHeaderView key="headerView" id="AccountSidebarHeader" hidden="YES"/>
+                            </scrollView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="AccountSidebarScroll" firstAttribute="top" secondItem="AccountSidebarView" secondAttribute="top" id="AccountSidebarScrollTop"/>
+                            <constraint firstItem="AccountSidebarScroll" firstAttribute="leading" secondItem="AccountSidebarView" secondAttribute="leading" id="AccountSidebarScrollLeading"/>
+                            <constraint firstAttribute="bottom" secondItem="AccountSidebarScroll" secondAttribute="bottom" id="AccountSidebarScrollBottom"/>
+                            <constraint firstAttribute="trailing" secondItem="AccountSidebarScroll" secondAttribute="trailing" id="AccountSidebarScrollTrailing"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="outlineView" destination="AccountSidebarOutline" id="AccountSidebarOutlineOutlet"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="AccountSidebarFirstResponder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+        <!--Message List View Controller-->
+        <scene sceneID="MessageListScene">
+            <objects>
+                <viewController storyboardIdentifier="MessageListViewController" id="MessageListViewController" customClass="MessageListViewController" customModule="SwiftMail" sceneMemberID="viewController">
+                    <view key="view" wantsLayer="YES" id="MessageListView">
+                        <rect key="frame" x="0.0" y="0.0" width="360" height="720"/>
+                        <subviews>
+                            <scrollView autohidesScrollers="YES" horizontalLineScroll="32" horizontalPageScroll="10" verticalLineScroll="32" verticalPageScroll="10" translatesAutoresizingMaskIntoConstraints="NO" id="MessageListScroll">
+                                <rect key="frame" x="0.0" y="0.0" width="360" height="720"/>
+                                <clipView key="contentView" id="MessageListClip">
+                                    <rect key="frame" x="0.0" y="0.0" width="360" height="720"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <subviews>
+                                        <tableView rowSizeStyle="medium" headerView="MessageListHeader" usesAutomaticRowHeights="YES" columnAutoresizingStyle="lastColumnOnly" translatesAutoresizingMaskIntoConstraints="NO" id="MessageListTable">
+                                            <rect key="frame" x="0.0" y="0.0" width="360" height="720"/>
+                                            <size key="intercellSpacing" width="2" height="4"/>
+                                            <tableColumns>
+                                                <tableColumn width="360" minWidth="200" maxWidth="600" id="MessageListColumn">
+                                                    <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" title="メッセージ" id="MessageListHeaderCell"/>
+                                                    <textFieldCell key="dataCell" lineBreakMode="truncatingTail" usesSingleLineMode="NO" alignment="left" title="件名" id="MessageListCell">
+                                                        <font key="font" metaFont="system" size="14"/> 
+                                                    </textFieldCell>
+                                                </tableColumn>
+                                            </tableColumns>
+                                        </tableView>
+                                    </subviews>
+                                    <constraints>
+                                        <constraint firstItem="MessageListTable" firstAttribute="leading" secondItem="MessageListClip" secondAttribute="leading" id="MessageListLeading"/>
+                                        <constraint firstItem="MessageListTable" firstAttribute="trailing" secondItem="MessageListClip" secondAttribute="trailing" id="MessageListTrailing"/>
+                                        <constraint firstItem="MessageListTable" firstAttribute="top" secondItem="MessageListClip" secondAttribute="top" id="MessageListTop"/>
+                                        <constraint firstAttribute="bottom" secondItem="MessageListTable" secondAttribute="bottom" id="MessageListBottom"/>
+                                    </constraints>
+                                </clipView>
+                                <scroller key="horizontalScroller" horizontal="YES" hidden="YES" id="MessageListHorizontalScroller"/>
+                                <scroller key="verticalScroller" vertical="YES" id="MessageListVerticalScroller"/>
+                                <tableHeaderView key="headerView" id="MessageListHeader"/>
+                            </scrollView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="MessageListScroll" firstAttribute="top" secondItem="MessageListView" secondAttribute="top" id="MessageListScrollTop"/>
+                            <constraint firstItem="MessageListScroll" firstAttribute="leading" secondItem="MessageListView" secondAttribute="leading" id="MessageListScrollLeading"/>
+                            <constraint firstAttribute="trailing" secondItem="MessageListScroll" secondAttribute="trailing" id="MessageListScrollTrailing"/>
+                            <constraint firstAttribute="bottom" secondItem="MessageListScroll" secondAttribute="bottom" id="MessageListScrollBottom"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="MessageListFirstResponder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+        <!--Message Detail View Controller-->
+        <scene sceneID="MessageDetailScene">
+            <objects>
+                <viewController storyboardIdentifier="MessageDetailViewController" id="MessageDetailViewController" customClass="MessageDetailViewController" customModule="SwiftMail" sceneMemberID="viewController">
+                    <view key="view" wantsLayer="YES" id="MessageDetailView">
+                        <rect key="frame" x="0.0" y="0.0" width="620" height="720"/>
+                        <subviews>
+                            <scrollView autohidesScrollers="YES" borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" translatesAutoresizingMaskIntoConstraints="NO" id="MessageDetailScroll">
+                                <rect key="frame" x="0.0" y="0.0" width="620" height="720"/>
+                                <clipView key="contentView" drawsBackground="NO" id="MessageDetailClip">
+                                    <rect key="frame" x="0.0" y="0.0" width="620" height="720"/>
+                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                    <subviews>
+                                        <textView editable="NO" richText="NO" verticallyResizable="YES" horizontallyResizable="YES" usesFontPanel="NO" usesRuler="NO" drawsBackground="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MessageDetailTextView">
+                                            <rect key="frame" x="0.0" y="0.0" width="620" height="720"/>
+                                            <font key="font" metaFont="system" size="14"/>
+                                        </textView>
+                                    </subviews>
+                                    <constraints>
+                                        <constraint firstItem="MessageDetailTextView" firstAttribute="leading" secondItem="MessageDetailClip" secondAttribute="leading" id="MessageDetailLeading"/>
+                                        <constraint firstAttribute="trailing" secondItem="MessageDetailTextView" secondAttribute="trailing" id="MessageDetailTrailing"/>
+                                        <constraint firstItem="MessageDetailTextView" firstAttribute="top" secondItem="MessageDetailClip" secondAttribute="top" id="MessageDetailTop"/>
+                                        <constraint firstAttribute="bottom" secondItem="MessageDetailTextView" secondAttribute="bottom" id="MessageDetailBottom"/>
+                                    </constraints>
+                                </clipView>
+                                <scroller key="horizontalScroller" horizontal="YES" hidden="YES" id="MessageDetailHorizontalScroller"/>
+                                <scroller key="verticalScroller" vertical="YES" id="MessageDetailVerticalScroller"/>
+                            </scrollView>
+                        </subviews>
+                        <constraints>
+                            <constraint firstItem="MessageDetailScroll" firstAttribute="top" secondItem="MessageDetailView" secondAttribute="top" id="MessageDetailScrollTop"/>
+                            <constraint firstItem="MessageDetailScroll" firstAttribute="leading" secondItem="MessageDetailView" secondAttribute="leading" id="MessageDetailScrollLeading"/>
+                            <constraint firstAttribute="trailing" secondItem="MessageDetailScroll" secondAttribute="trailing" id="MessageDetailScrollTrailing"/>
+                            <constraint firstAttribute="bottom" secondItem="MessageDetailScroll" secondAttribute="bottom" id="MessageDetailScrollBottom"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="MessageDetailFirstResponder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+    </scenes>
+</document>

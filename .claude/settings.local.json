@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild:*)",
+      "Bash(/Applications/Xcode.app/Contents/Developer/usr/bin/ibtool --errors --warnings --notices --target-device mac --minimum-deployment-target 12.0 --output-format human-readable-text /Users/ayumu/SynologyDrive/WEB制作/SwiftMail/GitHub/SwiftMail/SwiftMail/Resources/Main.storyboard --compilation-directory /tmp)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
