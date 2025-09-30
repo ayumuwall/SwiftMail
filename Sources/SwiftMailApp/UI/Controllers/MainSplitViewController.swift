@@ -113,6 +113,10 @@ final class MainSplitViewController: NSSplitViewController {
         detailController.display(message: nil)
     }
 
+    func refreshData() {
+        loadInitialData()
+    }
+
     private func loadMessages(for folder: IMAPFolder?) {
         guard let account = currentAccount else { return }
         messageListController.setLoadingState()
