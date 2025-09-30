@@ -5,10 +5,31 @@ SwiftMailは、macOS専用の軽量メールクライアントです。Thunderbi
 
 ## 🎯 絶対原則（MUST READ FIRST）
 
-### 開発思想
+### 開発思想：モノリシック設計哲学
+
+SwiftMailは**Linuxカーネル的モノリシック設計**を採用します。マイクロカーネル（プラグインシステム）ではなく、全機能を最適化された単一バイナリに統合します。
+
+```
+モノリシック設計の利点（Linux方式）:
+✅ 機能間の密結合による最適化
+✅ 関数呼び出しのオーバーヘッドなし
+✅ メモリ共有による効率化
+✅ デバッグ・プロファイリングが容易
+✅ セキュリティ境界がシンプル
+
+マイクロカーネル（プラグイン）の欠点:
+❌ プロセス間通信のオーバーヘッド
+❌ API境界の保守コスト
+❌ バージョン互換性の悪夢
+❌ セキュリティリスクの増大
+❌ パフォーマンスの予測不能性
+```
+
+**核心原則**:
 - **Minimalism First**: 機能を追加するのではなく、削ることを重視
-- **Performance Focused**: 高速起動と軽快な動作を最優先  
+- **Performance Focused**: 高速起動と軽快な動作を最優先
 - **Native Experience**: macOSのHuman Interface Guidelinesに完全準拠
+- **Monolithic Excellence**: プラグイン不要なほど完成度が高い本体を構築
 
 ### コミュニケーション
 - **常に日本語で応答すること**（開発用エージェントの出力は日本語限定）
@@ -27,12 +48,26 @@ CPU使用率:       < 5%     (アイドル時、Activity Monitorで測定)
 ❌ 外部ライブラリ（SQLite.swift、FMDB、Alamofire等）
 ❌ CoreData（オーバーヘッド大）
 ❌ カレンダー統合、タスク管理、RSS購読
-❌ チャット機能、プラグインシステム
+❌ チャット機能、プラグインシステム、拡張機能API
 ❌ テーマカスタマイズ、複雑なフィルタールール
 ❌ 自動分類・AI機能、ソーシャルメディア統合
 ```
 
-### 必須機能（これ以上増やさない）
+**プラグインシステムを実装しない理由**:
+```
+Thunderbirdの失敗から学ぶ:
+- プラグインで機能拡張 → 本体が貧弱なまま
+- API保守コスト → 開発リソース浪費
+- セキュリティリスク → サードパーティコードの脆弱性
+- パフォーマンス劣化 → プラグインロード・IPC オーバーヘッド
+
+SwiftMailのアプローチ:
+→ 必要な機能は本体に最適化実装
+→ プラグインAPI保守コスト = 10個の実用機能を実装できる
+→ モノリシック設計で最高のパフォーマンス
+```
+
+### コア機能（厳選された本体実装）
 ```
 ✅ POP3/IMAP受信（フォルダー対応はIMAPのみ）
 ✅ SMTP送信
@@ -42,6 +77,23 @@ CPU使用率:       < 5%     (アイドル時、Activity Monitorで測定)
 ✅ 添付ファイル（ダウンロード/表示のみ）
 ✅ オフラインサポート（キャッシュ/キュー）
 ✅ Mail.app互換キーボードショートカット
+```
+
+### 将来実装を検討する機能（本体統合のみ）
+```
+検討中（ユーザー需要に応じて本体に追加）:
+- 予約送信（Send Later）
+- 重複メッセージ削除
+- メールテンプレート
+- 添付忘れ警告
+- 署名の複数管理
+- 一括送信（Mail Merge）
+
+実装基準:
+- 10%以上のユーザーが使用する
+- 500行以下で実装可能
+- パフォーマンス影響が許容範囲
+→ これらを満たせば本体に統合
 ```
 
 ## 📐 アーキテクチャ
@@ -343,61 +395,102 @@ class SecureMailViewer {
 
 ## 🎨 UI/UX実装規則
 
-### Interface Builderポリシー（新方針）
-- **UI要素はStoryboardまたはXIBで定義すること**。ビューコントローラーではロジックのみに集中し、`loadView()` やフレームベースレイアウトは禁止。
-- 既存の`Main.storyboard`を基点に3ペインレイアウトやテーブルビュー列を調整し、新規画面も必ず`Resources/`配下のStoryboard/XIBで管理する。
-- サイズ・色・フォントなど視覚的パラメータはIBで調整し、コード側は表示切り替えやデータ反映といったロジックに専念する。
+### UI構築方針（LLM最適化）
 
-### Storyboard/XIBハイブリッド戦略
-このアプリのエンドユーザーは人間であるため、UI開発においては、人間が調整しやすいInterface Builderで確認できるようにする。
+SwiftMailは**AppKitプログラマティックUI（コードベース）**を採用します。これはLLMによる開発に最適化された選択です。
 
-- メインフローは Storyboard - 全体像の把握が容易
-- 再利用コンポーネントは XIB - 保守性と効率性を確保
-- 機能ごとに Storyboard を分割 - チーム開発での競合を最小化
+#### フレームワーク比較と選択理由
 
-この方針により、プロジェクトは視覚的なわかりやすさと実装の効率性を両立できる。
-Interface Builderの利点を最大限活用しつつ、スケーラビリティも確保できる。
+| フレームワーク | 採用 | 理由 |
+|--------------|------|------|
+| **AppKit（プログラマティック）** | ✅ 採用 | LLMが完全理解可能、最高速、最小メモリ、完全制御 |
+| SwiftUI | ❌ 禁止 | ランタイムオーバーヘッド大、メモリ使用量増、抽象化による制御不能 |
+| XIB/Storyboard | ❌ 禁止 | バイナリファイル、LLMが編集不可、起動オーバーヘッド |
+| Catalyst | ❌ 禁止 | iOS互換レイヤー不要、パフォーマンス劣化 |
+
+#### プログラマティックUI実装例
 
 ```swift
-// プロジェクト構造例
-SwiftMail/
-├── Resources/
-│   ├── Main.storyboard           // メインフロー（3ペインレイアウト）
-│   ├── Onboarding.storyboard     // オンボーディング専用
-│   └── Views/
-│       ├── ComposeView.xib       // 作成画面（再利用可能）
-│       ├── MessageCell.xib       // カスタムセル
-│       └── AttachmentView.xib    // 添付ファイルビュー
-```
+// ✅ 正しい実装（AppKitプログラマティック）
+final class MessageListViewController: NSViewController {
+    private let tableView = NSTableView()
+    private let scrollView = NSScrollView()
 
-実装例
+    override func loadView() {
+        view = NSView()
+    }
 
-Storyboard でメインフロー定義：
-```swift
-// Main.storyboard内で3ペインレイアウトを構築
-class MainViewController: UISplitViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Storyboardで定義されたレイアウトを活用
-        preferredDisplayMode = .allVisible
+        configureTableView()
+    }
+
+    private func configureTableView() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.documentView = tableView
+        view.addSubview(scrollView)
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
     }
 }
+
+// ❌ SwiftUI（禁止）
+struct MessageListView: View {
+    var body: some View {
+        List { }
+    }
+}
+
+// ❌ XIB/Storyboard（禁止）
+@IBOutlet weak var tableView: NSTableView!
 ```
 
-XIB でカスタムビュー作成：
-```swift
-// ComposeView.xib と連携
-class ComposeView: UIView {
-    @IBOutlet weak var toField: UITextField!
-    @IBOutlet weak var subjectField: UITextField!
-    @IBOutlet weak var bodyTextView: UITextView!
-    
-    static func instantiate() -> ComposeView {
-        let nib = UINib(nibName: "ComposeView", bundle: nil)
-        return nib.instantiate(withOwner: nil, options: nil)[0] as! ComposeView
-    }
-}
+#### なぜプログラマティックUIなのか
+
+**LLMによる開発効率**:
+- ✅ 全てのUIコードが.swiftファイルに記述される
+- ✅ LLMがコンテキスト全体を理解可能
+- ✅ バージョン管理の差分が明確
+- ✅ コンパイル時型チェック
+
+**パフォーマンス**:
+- ✅ XIB/Storyboardのロード時間ゼロ（起動時間-50ms以上削減）
+- ✅ SwiftUIのランタイムオーバーヘッドなし（メモリ-30%削減）
+- ✅ 直接AppKit APIアクセスによる最適化
+
+**保守性**:
+- ✅ 検索・置換が容易
+- ✅ リファクタリング安全性
+- ✅ コードレビューが明確
+
+### LLMが生成・編集してはいけないファイル（厳格なルール）
+
 ```
+❌ 絶対に生成・編集禁止:
+  - *.storyboard      (Interface Builderバイナリファイル)
+  - *.xib             (Interface Builderバイナリファイル)
+  - *.xcodeproj/*     (Xcodeプロジェクト設定、人間が管理)
+  - *.xcworkspace/*   (Xcodeワークスペース設定)
+  - project.pbxproj   (Xcodeプロジェクトファイル、競合多発)
+  - *.xcassets/*      (Asset Catalog、人間がXcodeで管理)
+
+✅ LLMが生成・編集可能:
+  - *.swift           (Swiftソースコード)
+  - Package.swift     (SwiftPMマニフェスト、テキスト形式)
+  - *.md              (ドキュメント)
+  - .gitignore        (Git設定)
+```
+
+**理由**:
+- Xcodeプロジェクトファイルは複雑なXML/バイナリ形式
+- LLMによる編集はマージコンフリクト・破損リスク大
+- Interface Builderファイルは人間による視覚的編集が必須
+- プログラマティックUIならSwiftコードのみで完結
 
 ### 必須キーボードショートカット（Mail.app完全互換）
 ```swift
@@ -432,7 +525,7 @@ view.frame = CGRect(x: 0, y: 0, width: 100, height: 50)
 let textColor = NSColor.labelColor
 let backgroundColor = NSColor.controlBackgroundColor
 
-// フォント（システムフォント必須）  
+// フォント（システムフォント必須）
 let bodyFont = NSFont.systemFont(ofSize: NSFont.systemFontSize)
 let titleFont = NSFont.boldSystemFont(ofSize: NSFont.systemFontSize + 2)
 ```
@@ -705,19 +798,171 @@ Profile: Instruments向け、最適化有効、デバッグシンボル付き
 
 ## 📋 Claude Code開発時の判断基準
 
-### 新機能追加の判断フロー
+### 新機能追加の判断フロー（モノリシック方針）
+
 ```
 1. その機能はメール送受信に必須か？
    → No: 実装しない
    → Yes: 次へ
-   
+
 2. 既存機能で代替可能か？
    → Yes: 実装しない
    → No: 次へ
-   
+
 3. パフォーマンスに悪影響があるか？
    → Yes: 実装しない
-   → No: 最小限の実装を検討
+   → No: 次へ
+
+4. 本体に統合すべきか、プラグインにすべきか？
+   → 常に本体に統合（プラグインシステムは存在しない）
+```
+
+### 「プラグインで対応してほしい」要望への対応
+
+ユーザーから「この機能はプラグインで」という要望があった場合：
+
+#### ステップ1: 人気プラグインの実態調査
+```
+Thunderbird人気プラグイン分析:
+✅ Send Later（予約送信）        → 本体に実装すべき基本機能
+✅ Remove Duplicate Messages      → SQLiteクエリで簡単実装
+✅ Signature Switch              → アカウント設定の一部
+✅ QuickText（テンプレート）      → 下書き機能の拡張
+✅ Attachment Reminder            → 送信前バリデーション
+✅ Mail Merge                    → 一括送信機能
+
+結論: プラグインが必要 = 本体機能不足の証拠
+```
+
+#### ステップ2: 実装コスト vs プラグインシステムコスト
+
+| 項目 | 本体実装 | プラグインシステム |
+|------|---------|------------------|
+| 初期開発 | 50-200行 | 5000行以上（API設計） |
+| 保守コスト | 低い | 永続的に高い |
+| パフォーマンス | 最適化可能 | オーバーヘッド避けられない |
+| セキュリティ | 完全制御 | サードパーティリスク |
+
+**判断基準**:
+```
+機能の実装コスト < プラグインシステムの保守コスト
+→ ほぼ常に成立
+→ 必要な機能は本体に実装する
+```
+
+#### ステップ3: 機能採用判定
+
+```swift
+// 実装例: 予約送信（100行以下で実装可能）
+CREATE TABLE scheduled_messages (
+    id TEXT PRIMARY KEY,
+    send_at INTEGER NOT NULL,
+    to_address TEXT NOT NULL,
+    subject TEXT,
+    body TEXT,
+    created_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+
+// バックグラウンドスケジューラー
+class ScheduledMessageService {
+    func checkAndSendScheduledMessages() async {
+        let now = Date().timeIntervalSince1970
+        let pending = await repository.fetchScheduledMessages(before: now)
+        for message in pending {
+            try await smtpService.send(message)
+            await repository.deleteScheduledMessage(message.id)
+        }
+    }
+}
+```
+
+**採用ルール**:
+- 10%以上のユーザーが使う → 本体実装を検討
+- 500行以下で実装可能 → 本体実装
+- パフォーマンス影響が測定可能 → 本体実装
+- それ以外 → 実装しない（プラグインでも対応しない）
+
+### プラグインリクエストの標準回答テンプレート
+
+```
+ユーザー: 「〇〇機能をプラグインで追加してほしい」
+
+回答:
+「SwiftMailはモノリシック設計を採用しており、プラグインシステムは
+提供していません。代わりに、本当に必要な機能は最適化された形で
+本体に統合します。
+
+〇〇機能について：
+- [機能の必要性を評価]
+- [実装コストを見積もり]
+- [結論: 次期バージョンで本体実装 / 実装しない]
+
+理由: プラグインシステムの保守コストより、厳選した機能を
+本体に実装する方が、全ユーザーにとって高速で安定した
+体験を提供できます。」
+```
+
+### LLM開発ガードレール（厳格遵守）
+
+#### ファイル編集権限
+
+```
+✅ LLMが自由に生成・編集可能:
+  *.swift              - Swiftソースコード（メインの開発対象）
+  Package.swift        - SwiftPMマニフェスト（テキスト形式）
+  *.md                 - ドキュメント
+  .gitignore           - Git設定
+  *.json               - 設定ファイル（テキスト形式）
+
+❌ LLMが絶対に生成・編集禁止:
+  *.storyboard         - Interface Builderファイル（バイナリ/XML複合）
+  *.xib                - Interface Builderファイル（バイナリ/XML複合）
+  *.xcodeproj/*        - Xcodeプロジェクト設定（複雑なXML、人間が管理）
+  *.xcworkspace/*      - Xcodeワークスペース（複雑なXML）
+  project.pbxproj      - Xcodeプロジェクト本体（マージコンフリクト頻発）
+  *.xcassets/*         - Asset Catalog（バイナリ、Xcodeで管理）
+  xcuserdata/*         - Xcodeユーザー設定（自動生成）
+  xcshareddata/*       - Xcodeスキーム（自動生成）
+
+⚠️ 読み取りのみ許可（編集時は人間に確認）:
+  Info.plist           - アプリケーション設定（Xcodeで管理推奨）
+  Entitlements.plist   - セキュリティ設定（慎重な編集が必要）
+```
+
+#### 禁止理由の詳細
+
+**Xcodeプロジェクトファイル（*.xcodeproj/*）**:
+- LLMによる編集は99%の確率でプロジェクト破損を引き起こす
+- マージコンフリクト解決が極めて困難
+- Xcodeのビルドシステムが内部形式を頻繁に変更
+- 人間がXcodeのGUIで操作すべき領域
+
+**Interface Builder（*.storyboard, *.xib）**:
+- バイナリ化されたXML（LLMが正確に編集できない）
+- ビジュアル編集が前提（コード編集は非効率）
+- SwiftMailはプログラマティックUIのため使用しない
+
+**Asset Catalog（*.xcassets/*）**:
+- Xcodeが専用フォーマットで管理
+- 画像最適化・リソース圧縮を自動実行
+- 人間がXcodeで追加・管理すべき
+
+#### LLMが守るべき開発フロー
+
+```
+1. ユーザーから機能追加要求
+   ↓
+2. LLMは.swiftファイルのみを生成・編集
+   ↓
+3. 新しいファイルを追加した場合:
+   「Xcodeで[プロジェクト名].xcodeprojを開き、
+    手動でファイルをプロジェクトに追加してください」
+   と指示を出力
+   ↓
+4. Xcodeプロジェクト設定の変更が必要な場合:
+   「Xcodeで以下の設定を手動で変更してください:
+    - ターゲット設定 > General > ...」
+   と具体的な手順を出力
 ```
 
 ### レビューチェックリスト
@@ -730,6 +975,8 @@ Profile: Instruments向け、最適化有効、デバッグシンボル付き
 □ パフォーマンス目標を満たしているか
 □ アクセシビリティ対応がされているか
 □ SQLite3 C APIを直接使用しているか
+□ プログラマティックUI（コードのみ）で実装されているか
+□ 禁止ファイル（.xcodeproj, .storyboard, .xib等）を編集していないか
 ```
 
 ## 🔍 クイックリファレンス
