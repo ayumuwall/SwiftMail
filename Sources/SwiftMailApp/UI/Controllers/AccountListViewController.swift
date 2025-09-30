@@ -152,7 +152,13 @@ final class AccountListViewController: NSViewController {
             settingsVC.setAccount(account)
         }
 
-        settingsVC.onSave = { [weak self] savedAccount in
+        let window = NSWindow(contentViewController: settingsVC)
+        window.title = account == nil ? "アカウント追加" : "アカウント編集"
+        window.styleMask = [.titled, .closable]
+        window.setContentSize(NSSize(width: 500, height: 600))
+        window.center()
+
+        settingsVC.onSave = { [weak self, weak window] savedAccount in
             guard let self = self else { return }
 
             if let existingIndex = self.accounts.firstIndex(where: { $0.id == savedAccount.id }) {
@@ -165,17 +171,18 @@ final class AccountListViewController: NSViewController {
 
             self.updateButtonStates()
             self.onAccountsChanged?(self.accounts)
+
+            NSApp.stopModal()
+            window?.close()
         }
 
-        let window = NSWindow(contentViewController: settingsVC)
-        window.title = account == nil ? "アカウント追加" : "アカウント編集"
-        window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 500, height: 600))
-        window.center()
-        window.makeKeyAndOrderFront(nil)
+        settingsVC.onCancel = { [weak window] in
+            NSApp.stopModal()
+            window?.close()
+        }
 
+        window.makeKeyAndOrderFront(nil)
         NSApp.runModal(for: window)
-        window.close()
     }
 
     private func updateButtonStates() {

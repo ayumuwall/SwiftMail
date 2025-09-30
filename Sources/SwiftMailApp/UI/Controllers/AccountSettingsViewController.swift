@@ -354,12 +354,12 @@ final class AccountSettingsViewController: NSViewController {
         }
 
         onSave?(account)
-        view.window?.close()
+        // onSaveコールバック内でウィンドウが閉じられるため、ここでは閉じない
     }
 
     @objc private func cancelButtonTapped() {
         onCancel?()
-        view.window?.close()
+        // onCancelコールバック内でウィンドウが閉じられるため、ここでは閉じない
     }
 
     @objc private func testConnectionTapped() {
