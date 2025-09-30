@@ -271,8 +271,35 @@ enum SyncStrategy {
 // IMAP: UID FETCHで差分同期、FLAGSで既読管理
 ```
 
-## 📂 ファイルシステム構造
+## 📂 プロジェクト構造
+
+### Xcodeプロジェクト構成
 ```
+SwiftMail/
+├── SwiftMail.xcodeproj/              # Xcodeプロジェクトファイル
+├── SwiftMail/                         # メインアプリターゲット
+│   ├── Resources/                     # リソースファイル
+│   │   ├── Main.storyboard           # メインUI定義
+│   │   ├── Assets.xcassets           # 画像・アイコン
+│   │   └── Info.plist                # アプリ設定
+│   ├── Supporting Files/              # 補助ファイル
+│   │   └── SwiftMail.entitlements    # サンドボックス設定
+├── Application/                       # アプリケーション層
+│   ├── AppDelegate.swift             # アプリライフサイクル
+│   └── AppEnvironment.swift          # 依存性注入
+├── UI/                                # UIレイヤー
+│   ├── ViewControllers/              # ビューコントローラー
+│   ├── Views/                        # カスタムビュー
+│   └── Extensions/                   # UI拡張
+├── SwiftMailCore/                     # コアロジック層
+│   ├── Models/                       # データモデル
+│   ├── Services/                     # ビジネスロジック
+│   └── Protocols/                    # プロトコル定義
+├── SwiftMailDatabase/                 # データベース層
+│   └── SQLite/                       # SQLite直接操作
+├── SwiftMailTests/                    # ユニットテスト
+└── SwiftMailUITests/                  # UIテスト
+
 ~/Library/Application Support/SwiftMail/
 ├── mail.db                  # SQLiteデータベース
 ├── mail.db-wal              # WALファイル
@@ -284,7 +311,7 @@ enum SyncStrategy {
 ~/Library/Preferences/
 └── com.swiftmail.plist      # 設定（機密情報以外）
 
-Keychain: 
+Keychain:
 └── パスワード、認証トークン等
 ```
 
@@ -663,9 +690,10 @@ Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { _ in
 
 ### Phase 1: 基盤（最優先）
 ```
-□ AppDelegate、MainWindowController
+✅ Xcodeプロジェクトの作成とInterface Builder構成
+✅ AppDelegate、MainWindowController
+✅ Main.storyboardによる基本3ペインレイアウト
 □ SQLiteデータベース層（スキーマ、最適化）
-□ 基本3ペインレイアウト
 □ データモデル（Account、Message、Folder）
 □ Keychainアクセス層
 ```
