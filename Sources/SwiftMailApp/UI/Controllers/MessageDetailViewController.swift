@@ -1,4 +1,5 @@
 import AppKit
+import WebKit
 import SwiftMailCore
 
 @MainActor
@@ -40,7 +41,20 @@ final class MessageDetailViewController: NSViewController {
         return textView
     }()
 
+    private lazy var webView: WKWebView = {
+        let config = WKWebViewConfiguration()
+        // セキュリティ設定（AGENTS.md準拠）
+        config.defaultWebpagePreferences.allowsContentJavaScript = false
+        config.websiteDataStore = .nonPersistent()
+        config.suppressesIncrementalRendering = true
+
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.translatesAutoresizingMaskIntoConstraints = false
+        return webView
+    }()
+
     private let scrollView = NSScrollView()
+    private var currentContentType: ContentType = .plain
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
@@ -76,6 +90,9 @@ final class MessageDetailViewController: NSViewController {
         view.addSubview(subjectLabel)
         view.addSubview(metadataLabel)
         view.addSubview(scrollView)
+        view.addSubview(webView)
+
+        webView.isHidden = true // 初期状態は非表示
 
         NSLayoutConstraint.activate([
             placeholderLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -93,7 +110,13 @@ final class MessageDetailViewController: NSViewController {
             scrollView.topAnchor.constraint(equalTo: metadataLabel.bottomAnchor, constant: 12),
             scrollView.leadingAnchor.constraint(equalTo: subjectLabel.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: subjectLabel.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16)
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16),
+
+            // WebView制約（scrollViewと同じ位置）
+            webView.topAnchor.constraint(equalTo: metadataLabel.bottomAnchor, constant: 12),
+            webView.leadingAnchor.constraint(equalTo: subjectLabel.leadingAnchor),
+            webView.trailingAnchor.constraint(equalTo: subjectLabel.trailingAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -16)
         ])
     }
 
@@ -103,6 +126,7 @@ final class MessageDetailViewController: NSViewController {
             subjectLabel.isHidden = true
             metadataLabel.isHidden = true
             scrollView.isHidden = true
+            webView.isHidden = true
             bodyTextView.string = ""
             return
         }
@@ -110,7 +134,6 @@ final class MessageDetailViewController: NSViewController {
         placeholderLabel.isHidden = true
         subjectLabel.isHidden = false
         metadataLabel.isHidden = false
-        scrollView.isHidden = false
 
         subjectLabel.stringValue = message.subject ?? "(件名なし)"
 
@@ -129,6 +152,57 @@ final class MessageDetailViewController: NSViewController {
         }
 
         metadataLabel.stringValue = [senderText, dateText].filter { !$0.isEmpty }.joined(separator: "\n")
-        bodyTextView.string = message.bodyPlain ?? "本文がありません"
+
+        // HTMLとプレーンテキストの判定
+        if let htmlBody = message.bodyHTML, !htmlBody.isEmpty {
+            displayHTML(htmlBody)
+        } else if let plainBody = message.bodyPlain {
+            displayPlainText(plainBody)
+        } else {
+            displayPlainText("本文がありません")
+        }
+    }
+
+    private func displayPlainText(_ text: String) {
+        currentContentType = .plain
+        scrollView.isHidden = false
+        webView.isHidden = true
+        bodyTextView.string = text
+    }
+
+    private func displayHTML(_ html: String) {
+        currentContentType = .html
+        scrollView.isHidden = true
+        webView.isHidden = false
+
+        // CSP (Content Security Policy) を適用してセキュリティ強化
+        let secureHTML = """
+        <html>
+        <head>
+            <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'none'; style-src 'unsafe-inline';">
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                    font-size: 13px;
+                    line-height: 1.6;
+                    padding: 0;
+                    margin: 0;
+                }
+            </style>
+        </head>
+        <body>
+        \(html)
+        </body>
+        </html>
+        """
+
+        webView.loadHTMLString(secureHTML, baseURL: nil)
+    }
+
+    private enum ContentType {
+        case plain
+        case html
     }
 }
+

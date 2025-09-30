@@ -1,0 +1,336 @@
+import Foundation
+import Network
+
+/// POP3 プロトコル実装（RFC 1939準拠）
+public final class POP3Client: @unchecked Sendable {
+
+    public enum POP3Error: LocalizedError {
+        case notConnected
+        case authenticationFailed
+        case invalidResponse(String)
+        case connectionFailed(Error)
+        case messageNotFound(Int)
+
+        public var errorDescription: String? {
+            switch self {
+            case .notConnected:
+                return "POP3サーバーに接続されていません"
+            case .authenticationFailed:
+                return "認証に失敗しました"
+            case .invalidResponse(let response):
+                return "無効なレスポンス: \(response)"
+            case .connectionFailed(let error):
+                return "接続失敗: \(error.localizedDescription)"
+            case .messageNotFound(let num):
+                return "メッセージ #\(num) が見つかりません"
+            }
+        }
+    }
+
+    private let host: String
+    private let port: Int
+    private let useTLS: Bool
+
+    private var connection: NWConnection?
+    private var isConnected = false
+
+    public init(host: String, port: Int = 995, useTLS: Bool = true) {
+        self.host = host
+        self.port = port
+        self.useTLS = useTLS
+    }
+
+    // MARK: - Connection Management
+
+    /// POP3サーバーに接続
+    public func connect() async throws {
+        let endpoint = NWEndpoint.hostPort(
+            host: NWEndpoint.Host(host),
+            port: NWEndpoint.Port(integerLiteral: UInt16(port))
+        )
+
+        let parameters: NWParameters
+        if useTLS {
+            parameters = .tls
+        } else {
+            parameters = .tcp
+        }
+
+        connection = NWConnection(to: endpoint, using: parameters)
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            connection?.stateUpdateHandler = { [weak self] state in
+                switch state {
+                case .ready:
+                    self?.isConnected = true
+                    continuation.resume()
+                case .failed(let error):
+                    continuation.resume(throwing: POP3Error.connectionFailed(error))
+                case .waiting(let error):
+                    continuation.resume(throwing: POP3Error.connectionFailed(error))
+                default:
+                    break
+                }
+            }
+
+            connection?.start(queue: .main)
+        }
+
+        // サーバーの初期応答を読み取る（+OK ...）
+        _ = try await receiveResponse()
+    }
+
+    /// サーバーから切断
+    public func disconnect() async throws {
+        if isConnected {
+            try await sendCommand("QUIT")
+        }
+        connection?.cancel()
+        connection = nil
+        isConnected = false
+    }
+
+    // MARK: - Authentication
+
+    /// ユーザー認証（USER/PASS方式）
+    public func login(username: String, password: String) async throws {
+        guard isConnected else {
+            throw POP3Error.notConnected
+        }
+
+        // USER コマンド
+        let userResponse = try await sendCommand("USER \(username)")
+        guard userResponse.hasPrefix("+OK") else {
+            throw POP3Error.authenticationFailed
+        }
+
+        // PASS コマンド
+        let passResponse = try await sendCommand("PASS \(password)")
+        guard passResponse.hasPrefix("+OK") else {
+            throw POP3Error.authenticationFailed
+        }
+    }
+
+    // MARK: - Mailbox Operations
+
+    /// メールボックスの統計情報を取得
+    public func stat() async throws -> MailboxStat {
+        guard isConnected else {
+            throw POP3Error.notConnected
+        }
+
+        let response = try await sendCommand("STAT")
+        guard response.hasPrefix("+OK") else {
+            throw POP3Error.invalidResponse(response)
+        }
+
+        // "+OK 3 120" のような形式から数値を抽出
+        let components = response.components(separatedBy: " ")
+        guard components.count >= 3,
+              let messageCount = Int(components[1]),
+              let totalSize = Int(components[2]) else {
+            throw POP3Error.invalidResponse(response)
+        }
+
+        return MailboxStat(messageCount: messageCount, totalSize: totalSize)
+    }
+
+    /// メッセージリストを取得（番号とサイズ）
+    public func list() async throws -> [MessageInfo] {
+        guard isConnected else {
+            throw POP3Error.notConnected
+        }
+
+        let response = try await sendCommand("LIST")
+        guard response.hasPrefix("+OK") else {
+            throw POP3Error.invalidResponse(response)
+        }
+
+        var messages: [MessageInfo] = []
+        let lines = response.components(separatedBy: "\r\n")
+
+        for line in lines.dropFirst() { // 最初の行は"+OK"なのでスキップ
+            if line == "." { break } // 終端
+            let components = line.components(separatedBy: " ")
+            guard components.count >= 2,
+                  let number = Int(components[0]),
+                  let size = Int(components[1]) else {
+                continue
+            }
+            messages.append(MessageInfo(number: number, size: size))
+        }
+
+        return messages
+    }
+
+    /// UIDL（Unique ID Listing）を取得
+    public func uidl() async throws -> [String: String] {
+        guard isConnected else {
+            throw POP3Error.notConnected
+        }
+
+        let response = try await sendCommand("UIDL")
+        guard response.hasPrefix("+OK") else {
+            throw POP3Error.invalidResponse(response)
+        }
+
+        var uidlMap: [String: String] = [:]
+        let lines = response.components(separatedBy: "\r\n")
+
+        for line in lines.dropFirst() {
+            if line == "." { break }
+            let components = line.components(separatedBy: " ")
+            guard components.count >= 2 else { continue }
+            let number = components[0]
+            let uidl = components[1]
+            uidlMap[number] = uidl
+        }
+
+        return uidlMap
+    }
+
+    /// 特定のメッセージを取得
+    public func retrieve(messageNumber: Int) async throws -> String {
+        guard isConnected else {
+            throw POP3Error.notConnected
+        }
+
+        let response = try await sendCommand("RETR \(messageNumber)")
+        guard response.hasPrefix("+OK") else {
+            if response.hasPrefix("-ERR") {
+                throw POP3Error.messageNotFound(messageNumber)
+            }
+            throw POP3Error.invalidResponse(response)
+        }
+
+        // "+OK"の後にメッセージ本体が続く
+        let lines = response.components(separatedBy: "\r\n")
+        var messageLines = lines.dropFirst() // "+OK"行をスキップ
+
+        // 最後の"."を除去
+        if let lastLine = messageLines.last, lastLine == "." {
+            messageLines = messageLines.dropLast()
+        }
+
+        return messageLines.joined(separator: "\r\n")
+    }
+
+    /// メッセージを削除マーク
+    public func delete(messageNumber: Int) async throws {
+        guard isConnected else {
+            throw POP3Error.notConnected
+        }
+
+        let response = try await sendCommand("DELE \(messageNumber)")
+        guard response.hasPrefix("+OK") else {
+            throw POP3Error.invalidResponse(response)
+        }
+    }
+
+    /// 削除マークをリセット
+    public func reset() async throws {
+        guard isConnected else {
+            throw POP3Error.notConnected
+        }
+
+        let response = try await sendCommand("RSET")
+        guard response.hasPrefix("+OK") else {
+            throw POP3Error.invalidResponse(response)
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private func sendCommand(_ command: String) async throws -> String {
+        guard let connection = connection else {
+            throw POP3Error.notConnected
+        }
+
+        // コマンド送信（改行付き）
+        let commandWithCRLF = command + "\r\n"
+        let data = commandWithCRLF.data(using: .utf8)!
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            connection.send(content: data, completion: .contentProcessed { error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            })
+        }
+
+        // レスポンス受信
+        return try await receiveResponse()
+    }
+
+    private func receiveResponse() async throws -> String {
+        guard let connection = connection else {
+            throw POP3Error.notConnected
+        }
+
+        var fullResponse = ""
+        var isMultiline = false
+
+        // マルチライン応答対応（LISTやUIDLなど）
+        while true {
+            let chunk = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+                connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, _, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let data = data, let response = String(data: data, encoding: .utf8) {
+                        continuation.resume(returning: response)
+                    } else {
+                        continuation.resume(throwing: POP3Error.invalidResponse("Empty response"))
+                    }
+                }
+            }
+
+            fullResponse += chunk
+
+            // マルチライン判定
+            if fullResponse.hasPrefix("+OK") && fullResponse.contains("\r\n") {
+                let firstLine = fullResponse.components(separatedBy: "\r\n")[0]
+                // LISTやUIDLの場合はマルチライン
+                if fullResponse.contains(".\r\n") {
+                    break // 終端検出
+                } else if !firstLine.contains("octets") {
+                    // 単一行レスポンス
+                    break
+                }
+                isMultiline = true
+            } else if fullResponse.hasPrefix("-ERR") {
+                break
+            }
+
+            // タイムアウト防止（簡易実装）
+            if fullResponse.count > 1_000_000 {
+                throw POP3Error.invalidResponse("Response too large")
+            }
+        }
+
+        return fullResponse
+    }
+}
+
+// MARK: - Supporting Types
+
+public struct MailboxStat {
+    public let messageCount: Int
+    public let totalSize: Int
+
+    public init(messageCount: Int, totalSize: Int) {
+        self.messageCount = messageCount
+        self.totalSize = totalSize
+    }
+}
+
+public struct MessageInfo {
+    public let number: Int
+    public let size: Int
+
+    public init(number: Int, size: Int) {
+        self.number = number
+        self.size = size
+    }
+}
