@@ -1,7 +1,7 @@
 import Foundation
 
 /// RFC 822/RFC 2822準拠のメールメッセージパーサー
-public final class MessageParser {
+public final class MessageParser: Sendable {
 
     public enum ParseError: LocalizedError {
         case invalidFormat

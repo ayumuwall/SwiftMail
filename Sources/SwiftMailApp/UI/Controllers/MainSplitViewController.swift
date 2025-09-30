@@ -5,6 +5,7 @@ import SwiftMailCore
 final class MainSplitViewController: NSSplitViewController {
     private let environment: AppEnvironment
     private let repository: MailRepository
+    private let syncService = MailSyncService()
 
     private let folderController = FolderListViewController()
     private let messageListController = MessageListViewController()
@@ -51,12 +52,13 @@ final class MainSplitViewController: NSSplitViewController {
     }
 
     private func loadInitialData() {
-        folderController.showPlaceholder(text: "フォルダーを読み込み中…")
+        folderController.showPlaceholder(text: "メールを同期中…")
         messageListController.setLoadingState()
 
         Task { [weak self] in
             guard let self else { return }
             do {
+                // アカウントを取得
                 let accounts = try await self.repository.fetchAccountsAsync()
                 guard let account = accounts.first else {
                     await MainActor.run {
@@ -65,6 +67,18 @@ final class MainSplitViewController: NSSplitViewController {
                     return
                 }
 
+                // サーバーからメールを同期
+                await Task.detached {
+                    do {
+                        let syncCount = try await self.syncService.sync(account: account, repository: self.repository)
+                        print("✅ \(syncCount)件のメールを同期しました")
+                    } catch {
+                        print("⚠️ メール同期エラー: \(error.localizedDescription)")
+                        // 同期失敗してもローカルデータは表示
+                    }
+                }.value
+
+                // ローカルデータを読み込み
                 let folders = try await self.repository.fetchIMAPFoldersAsync(accountID: account.id)
                 let normalizedFolders = self.normalizedFolders(for: account, sourceFolders: folders)
                 let initialFolder = normalizedFolders.first
@@ -86,8 +100,8 @@ final class MainSplitViewController: NSSplitViewController {
                 }
             } catch {
                 await MainActor.run {
-                    self.folderController.showPlaceholder(text: "フォルダーの読み込みに失敗しました\n\(error.localizedDescription)")
-                    self.messageListController.showPlaceholder(text: "メッセージの読み込みに失敗しました")
+                    self.folderController.showPlaceholder(text: "データの読み込みに失敗しました\n\(error.localizedDescription)")
+                    self.messageListController.showPlaceholder(text: "メッセージがありません")
                     self.detailController.display(message: nil)
                 }
             }

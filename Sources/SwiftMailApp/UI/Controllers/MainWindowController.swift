@@ -53,6 +53,37 @@ final class MainWindowController: NSWindowController {
     @objc private func accountsButtonTapped() {
         let accountListVC = AccountListViewController()
 
+        // 既存アカウントを読み込み
+        Task {
+            do {
+                let accounts = try await environment.repository.fetchAccountsAsync()
+                await MainActor.run {
+                    accountListVC.setAccounts(accounts)
+                }
+            } catch {
+                print("⚠️ アカウント読み込みエラー: \(error)")
+            }
+        }
+
+        // アカウント変更時の処理
+        accountListVC.onAccountsChanged = { [weak self] accounts in
+            guard let self = self else { return }
+            Task.detached {
+                // 全アカウントをデータベースに保存
+                for account in accounts {
+                    do {
+                        try self.environment.repository.upsertAccount(account)
+                    } catch {
+                        print("⚠️ アカウント保存エラー: \(error)")
+                    }
+                }
+                // メインビューを更新
+                await MainActor.run {
+                    self.splitViewController?.refreshData()
+                }
+            }
+        }
+
         let window = NSWindow(contentViewController: accountListVC)
         window.title = "アカウント管理"
         window.styleMask = [.titled, .closable, .resizable]
