@@ -29,20 +29,91 @@ SwiftMail への貢献に関心をお寄せいただきありがとうござい�
    - テスト結果 (実行したコマンドと結果)
    - 残課題またはフォローアップ案
 
-## 4. コーディングガイドラインの要点
+## 4. 🤖 AI/LLMコーディング歓迎
+
+SwiftMailは**Claude Code、GitHub Copilot、Cursor等のAI支援開発を積極的に歓迎**します。
+
+### なぜAI開発に適しているか
+
+- ✅ **プログラマティックUI設計** - 全UIが.swiftコードで記述（XIB/Storyboard不使用）
+- ✅ **詳細なAGENTS.md** - LLMが開発方針を完全理解可能
+- ✅ **厳格なガイドライン** - 一貫性のあるコード生成
+- ✅ **モノリシック設計** - 明確な実装パターン
+
+### AI生成コードの提出ガイド
+
+1. **[AGENTS.md](AGENTS.md)を必読**
+   - LLMにこのファイル全体を読み込ませてください
+   - 開発思想・禁止事項・実装パターンを理解させることが重要です
+
+2. **生成元の明記（推奨）**
+   ```
+   PR説明に記載例:
+   - 使用AI: Claude Code / GitHub Copilot / Cursor 等
+   - 人間レビュー: [どの部分を確認・修正したか]
+   - テスト: [実行した確認内容]
+   ```
+
+3. **レビューチェックリスト遵守**
+   - [ ] メモリリーク確認（`weak self`の使用）
+   - [ ] UI更新がメインスレッド（`@MainActor`）
+   - [ ] プログラマティックUI（XIB/Storyboard不使用）
+   - [ ] 禁止ファイル（.xcodeproj, .xib, .storyboard等）未編集
+   - [ ] 外部ライブラリ未追加
+   - [ ] パフォーマンス目標を満たす
+
+### AI開発の実例
+
+```swift
+// ✅ LLMが生成しやすいコード例（AGENTS.mdのパターンに準拠）
+final class MessageListViewController: NSViewController {
+    private let tableView = NSTableView()
+    private let scrollView = NSScrollView()
+
+    override func loadView() {
+        view = NSView()
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupTableView()
+    }
+
+    private func setupTableView() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.documentView = tableView
+        view.addSubview(scrollView)
+
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+}
+```
+
+### 重要な注意点
+
+- **AI生成でも人間の最終レビューは必須**です
+- LLMが生成したコードでも、動作確認・テスト実行は必ず行ってください
+- セキュリティに関わる部分（Keychain操作等）は特に慎重に確認してください
+
+## 5. コーディングガイドラインの要点
 - **依存関係**: Foundation / AppKit / WebKit / Security 以外の外部ライブラリは禁止です。SQLite は C API を直接呼び出してください。
 - **アーキテクチャ**: `SwiftMailCore → SwiftMailDatabase → SwiftMailApp` のレイヤリングを崩さないでください。UI から直接データベース層を触らないこと。
-- **UI**: Auto Layout を必須とし、フレームベースのレイアウトは禁止です。システムフォント・システムカラーを使用してください。
+- **UI**: プログラマティックUI必須（コードのみ）。Auto Layout を必須とし、フレームベースのレイアウトは禁止です。システムフォント・システムカラーを使用してください。
 - **スレッド**: UI 更新は `@MainActor` を厳守。非同期処理は適切な QoS を設定し、循環参照に注意して `weak self` を利用してください。
 - **パフォーマンス**: 大量データ処理ではカーソル・ストリーミングを活用し、不要なコピーを避けてください。測定結果や推定インパクトを PR に明記してください。
 - **ドキュメント**: 設計に関する重要な判断を行った場合は README または関連ドキュメントを更新してください。
 
-## 5. テストと品質保証
+## 6. テストと品質保証
 - すべての変更は `swift test` を通過させてください。必要に応じてユニットテスト・統合テストを追加してください。
 - 新しい機能やバグ修正には再現ケースをテストとして追加することを推奨します。
 - Instruments や Activity Monitor を用いた性能計測結果がある場合、PR に記録してください。
 
-## 6. レビュー基準
+## 7. レビュー基準
 レビューでは以下を優先的に確認します。
 - プロジェクトの哲学（ミニマリズム・パフォーマンス・ネイティブ体験）に合致しているか。
 - パフォーマンス・メモリ・安定性に悪影響が出ていないか。
@@ -50,15 +121,15 @@ SwiftMail への貢献に関心をお寄せいただきありがとうござい�
 - UI のアクセシビリティとショートカット互換性を損なっていないか。
 - ドキュメントやコードコメントが簡潔で分かりやすいか。
 
-## 7. Issue / Pull Request のクローズ基準
+## 8. Issue / Pull Request のクローズ基準
 - 受け入れられた変更はメンテナーが `main` にマージし、該当 Issue をクローズします。
 - プロジェクト方針と合致しない提案はクローズ理由を明記して終了します。
 - 一定期間アクティビティがない PR はメンテナー判断でクローズする場合があります。
 
-## 8. セキュリティに関する報告
+## 9. セキュリティに関する報告
 潜在的な脆弱性を発見した場合は、公開 Issue ではなく GitHub Security Advisories から報告してください。迅速に対応できるよう、再現手順と影響度を添えてください。
 
-## 9. 連絡先
+## 10. 連絡先
 - 一般的な質問: GitHub Discussions
 - バグ報告: GitHub Issues
 - セキュリティ: GitHub Security Advisories
