@@ -1,44 +1,14 @@
 # SwiftMail
 
-<div align="center">
-  <img src="assets/icon.png" alt="SwiftMail Icon" width="128" height="128">
-  
-  **超軽量・超高速なmacOS用メールクライアント（開発中）**
-  
-  [![Swift](https://img.shields.io/badge/Swift-6.0-orange.svg)](https://swift.org)
-  [![macOS](https://img.shields.io/badge/macOS-12.0+-blue.svg)](https://www.apple.com/macos)
-  [![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
-  [![Status](https://img.shields.io/badge/Status-Pre--Alpha-red.svg)](https://github.com/yourusername/SwiftMail)
-  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-</div>
+> **超軽量・超高速な macOS 用メールクライアント（プレアルファ）**
 
 [English](README.en.md) | **日本語**
 
 ---
 
-## 🚧 開発状況
+## これは何？
 
-**SwiftMailは現在開発初期段階です。** パフォーマンスとミニマリズムを最優先に、基盤部分から構築しています。
-
-### 現在の進捗
-- ✅ アーキテクチャ設計／開発ガイドライン整備
-- ✅ SQLite3データベース層とリポジトリ実装（FTS・添付管理含む）
-- ✅ AppKit三ペインUIの骨格とリポジトリ連携
-- 🚧 プロトコル層（IMAP/POP3/SMTP）実装準備
-- ⏳ メッセージ同期・送受信フロー強化
-
-## 🎯 開発思想と目標
-
-**ミニマリズム・ファースト** - SwiftMailは肥大化したメールクライアントのアンチテーゼです。他が機能を追加する中、私たちは本質を磨きます。
-
-### パフォーマンス目標
-- **起動時間**: 1秒以下
-- **メモリ使用量**: 100MB以下
-- **検索速度**: 10ms以下（10,000通のメール）
-- **外部依存**: ゼロ
-- **ネイティブ度**: 100% macOS純正体験
-
-## ✨ 実装予定機能
+SwiftMail は、**とにかく速く・軽く・シンプルに**を徹底した macOS 専用メールクライアントです。現代のメールアプリは多機能化で重くなりがち。SwiftMail は「メールはメールに集中する」という考えのもと、余計な機能をそぎ落とし、**起動の速さ**と**操作の軽さ**を最優先に設計しています。
 
 ### SwiftMailがやること
 - 📋 **超高速動作** - 目標：1秒起動、10,000通を10msで検索
@@ -316,19 +286,3 @@ SwiftMailはApache License 2.0でリリースされています。詳細は[LICE
 - **敬意** - システムリソースとプライバシーを尊重
 
 このビジョンに共感いただけるなら、ぜひ一緒に実現させましょう。
-
----
-
-<div align="center">
-  <b>より良いメールクライアントを一緒に作りましょう。</b>
-  
-  <br><br>
-  
-  ⭐ このリポジトリにスターを付けて進捗をフォロー<br>
-  👁️ Watchして更新情報を受け取る<br>
-  🔨 コントリビュートして実現に協力する
-  
-  <br><br>
-  
-  <sub>Thunderbirdが重すぎると感じているすべての人へ</sub>
-</div>
