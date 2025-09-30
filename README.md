@@ -91,7 +91,7 @@ open Package.swift
 # 注意：AppKitアプリは現在プレアルファ版で、UIはプレースホルダーを含みます
 ```
 
-**重要**: SwiftMailは外部依存ゼロです。CocoaPods、Carthage、Swift Package Managerの依存関係は一切ありません。純粋なSwiftとmacOSフレームワークのみ。
+**重要**: SwiftMailは**外部ライブラリ依存ゼロ**です。ビルドシステムとしてSwift Package Manager (SPM)を使用していますが、外部パッケージの追加は一切ありません。CocoaPods、Carthage等のサードパーティライブラリも不使用。純粋なSwiftとmacOS標準フレームワーク（Foundation/AppKit/Security）のみで構成。
 
 ## 🏗️ アーキテクチャ
 
