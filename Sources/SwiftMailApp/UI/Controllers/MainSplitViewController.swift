@@ -82,9 +82,10 @@ final class MainSplitViewController: NSSplitViewController {
                 let folders = try await self.repository.fetchIMAPFoldersAsync(accountID: account.id)
                 let normalizedFolders = self.normalizedFolders(for: account, sourceFolders: folders)
                 let initialFolder = normalizedFolders.first
+                let folderIDForFetch = self.folderID(for: account, folder: initialFolder)
                 let messages = try await self.repository.fetchMessagesAsync(
                     accountID: account.id,
-                    folderID: initialFolder?.id,
+                    folderID: folderIDForFetch,
                     limit: 50,
                     offset: 0
                 )
@@ -105,6 +106,15 @@ final class MainSplitViewController: NSSplitViewController {
                     self.detailController.display(message: nil)
                 }
             }
+        }
+    }
+
+    nonisolated private func folderID(for account: Account, folder: IMAPFolder?) -> String? {
+        switch account.serverType {
+        case .pop3:
+            return nil
+        case .imap:
+            return folder?.id
         }
     }
 
@@ -138,9 +148,10 @@ final class MainSplitViewController: NSSplitViewController {
         Task { [weak self] in
             guard let self else { return }
             do {
+                let folderIDForFetch = self.folderID(for: account, folder: folder)
                 let messages = try await self.repository.fetchMessagesAsync(
                     accountID: account.id,
-                    folderID: folder?.id,
+                    folderID: folderIDForFetch,
                     limit: 50,
                     offset: 0
                 )

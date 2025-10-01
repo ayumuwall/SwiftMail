@@ -167,15 +167,23 @@ public final class POP3Client: @unchecked Sendable {
             throw POP3Error.invalidResponse(response)
         }
 
-        // "+OK 3 120" のような形式から数値を抽出
-        let components = response.components(separatedBy: " ")
-        guard components.count >= 3,
-              let messageCount = Int(components[1]),
-              let totalSize = Int(components[2]) else {
+        // "+OK 3 120" のような形式から数値を抽出（余分な文言を無視）
+        let line = firstLine(from: response)
+        let tokens = line.split(separator: " ", omittingEmptySubsequences: true)
+
+        var parsedNumbers: [Int] = []
+        for token in tokens.dropFirst() {
+            if let value = Int(token) {
+                parsedNumbers.append(value)
+                if parsedNumbers.count == 2 { break }
+            }
+        }
+
+        guard parsedNumbers.count == 2 else {
             throw POP3Error.invalidResponse(response)
         }
 
-        return MailboxStat(messageCount: messageCount, totalSize: totalSize)
+        return MailboxStat(messageCount: parsedNumbers[0], totalSize: parsedNumbers[1])
     }
 
     /// メッセージリストを取得（番号とサイズ）
@@ -284,6 +292,7 @@ public final class POP3Client: @unchecked Sendable {
 
     // MARK: - Private Helpers
 
+    @discardableResult
     private func sendCommand(_ command: String, expectsMultiline: Bool = false) async throws -> String {
         guard let connection = connection else {
             throw POP3Error.notConnected
@@ -366,6 +375,19 @@ public final class POP3Client: @unchecked Sendable {
 
         return fullResponse
     }
+}
+
+private func firstLine(from response: String) -> String {
+    if let range = response.range(of: "\r\n") {
+        return String(response[..<range.lowerBound])
+    }
+    if let range = response.range(of: "\n") {
+        return String(response[..<range.lowerBound])
+    }
+    if let range = response.range(of: "\r") {
+        return String(response[..<range.lowerBound])
+    }
+    return response
 }
 
 private func shouldFinishResponse(_ response: String, expectsMultiline: Bool) -> Bool {
