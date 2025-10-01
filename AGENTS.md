@@ -279,7 +279,6 @@ SwiftMail/
 ├── SwiftMail.xcodeproj/              # Xcodeプロジェクトファイル
 ├── SwiftMail/                         # メインアプリターゲット
 │   ├── Resources/                     # リソースファイル
-│   │   ├── Main.storyboard           # メインUI定義
 │   │   ├── Assets.xcassets           # 画像・アイコン
 │   │   └── Info.plist                # アプリ設定
 │   ├── Supporting Files/              # 補助ファイル
@@ -287,7 +286,7 @@ SwiftMail/
 ├── Application/                       # アプリケーション層
 │   ├── AppDelegate.swift             # アプリライフサイクル
 │   └── AppEnvironment.swift          # 依存性注入
-├── UI/                                # UIレイヤー
+├── UI/                                # UIレイヤー（100% Programmatic）
 │   ├── ViewControllers/              # ビューコントローラー
 │   ├── Views/                        # カスタムビュー
 │   └── Extensions/                   # UI拡張
@@ -404,9 +403,9 @@ SwiftMailは**AppKitプログラマティックUI（コードベース）**を�
 | フレームワーク | 採用 | 理由 |
 |--------------|------|------|
 | **AppKit（プログラマティック）** | ✅ 採用 | LLMが完全理解可能、最高速、最小メモリ、完全制御 |
-| SwiftUI | ❌ 禁止 | ランタイムオーバーヘッド大、メモリ使用量増、抽象化による制御不能 |
-| XIB/Storyboard | ❌ 禁止 | バイナリファイル、LLMが編集不可、起動オーバーヘッド |
-| Catalyst | ❌ 禁止 | iOS互換レイヤー不要、パフォーマンス劣化 |
+| SwiftUI | ❌ 不使用 | ランタイムオーバーヘッド大、メモリ使用量増、抽象化による制御不能 |
+| XIB/Storyboard | ❌ 不使用 | バイナリファイル、LLMが編集不可、起動オーバーヘッド |
+| Catalyst | ❌ 不使用 | iOS互換レイヤー不要、パフォーマンス劣化 |
 
 #### プログラマティックUI実装例
 
@@ -446,8 +445,8 @@ struct MessageListView: View {
     }
 }
 
-// ❌ XIB/Storyboard（禁止）
-@IBOutlet weak var tableView: NSTableView!
+// ❌ XIB/Storyboard（プロジェクト方針により不使用）
+// @IBOutlet weak var tableView: NSTableView!
 ```
 
 #### なぜプログラマティックUIなのか
@@ -472,8 +471,6 @@ struct MessageListView: View {
 
 ```
 ❌ 絶対に生成・編集禁止:
-  - *.storyboard      (Interface Builderバイナリファイル)
-  - *.xib             (Interface Builderバイナリファイル)
   - *.xcodeproj/*     (Xcodeプロジェクト設定、人間が管理)
   - *.xcworkspace/*   (Xcodeワークスペース設定)
   - project.pbxproj   (Xcodeプロジェクトファイル、競合多発)
@@ -489,8 +486,8 @@ struct MessageListView: View {
 **理由**:
 - Xcodeプロジェクトファイルは複雑なXML/バイナリ形式
 - LLMによる編集はマージコンフリクト・破損リスク大
-- Interface Builderファイルは人間による視覚的編集が必須
 - プログラマティックUIならSwiftコードのみで完結
+- Storyboard/XIBは使用しないため編集対象外
 
 ### 必須キーボードショートカット（Mail.app完全互換）
 ```swift
@@ -690,9 +687,9 @@ Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { _ in
 
 ### Phase 1: 基盤（最優先）
 ```
-✅ Xcodeプロジェクトの作成とInterface Builder構成
+✅ Xcodeプロジェクトの作成とプログラマティックUI構成
 ✅ AppDelegate、MainWindowController
-✅ Main.storyboardによる基本3ペインレイアウト
+✅ 100% Swiftコードによる基本3ペインレイアウト
 □ SQLiteデータベース層（スキーマ、最適化）
 □ データモデル（Account、Message、Folder）
 □ Keychainアクセス層
@@ -915,14 +912,14 @@ class ScheduledMessageService {
   *.json               - 設定ファイル（テキスト形式）
 
 ❌ LLMが絶対に生成・編集禁止:
-  *.storyboard         - Interface Builderファイル（バイナリ/XML複合）
-  *.xib                - Interface Builderファイル（バイナリ/XML複合）
   *.xcodeproj/*        - Xcodeプロジェクト設定（複雑なXML、人間が管理）
   *.xcworkspace/*      - Xcodeワークスペース（複雑なXML）
   project.pbxproj      - Xcodeプロジェクト本体（マージコンフリクト頻発）
   *.xcassets/*         - Asset Catalog（バイナリ、Xcodeで管理）
   xcuserdata/*         - Xcodeユーザー設定（自動生成）
   xcshareddata/*       - Xcodeスキーム（自動生成）
+
+注: *.storyboard, *.xibはプロジェクト方針により使用しない（Programmatic UI採用）
 
 ⚠️ 読み取りのみ許可（編集時は人間に確認）:
   Info.plist           - アプリケーション設定（Xcodeで管理推奨）
@@ -938,9 +935,9 @@ class ScheduledMessageService {
 - 人間がXcodeのGUIで操作すべき領域
 
 **Interface Builder（*.storyboard, *.xib）**:
-- バイナリ化されたXML（LLMが正確に編集できない）
-- ビジュアル編集が前提（コード編集は非効率）
-- SwiftMailはプログラマティックUIのため使用しない
+- SwiftMailはプログラマティックUIを採用しており、これらのファイルは使用しない
+- 全てのUIは100% Swiftコードで記述する
+- LLMが完全に理解・編集可能なコードベースを維持
 
 **Asset Catalog（*.xcassets/*）**:
 - Xcodeが専用フォーマットで管理

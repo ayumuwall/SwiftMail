@@ -48,7 +48,7 @@ SwiftMail は、**とにかく速く・軽く・シンプルに**を徹底した
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/yourusername/SwiftMail.git
+git clone https://github.com/ayumuwall/SwiftMail.git
 cd SwiftMail
 
 # SwiftPMでビルド／テスト
@@ -85,7 +85,7 @@ SwiftMail/
 
 ### 技術スタック
 - **言語**: Swift 6.0
-- **UI**: AppKit プログラマティックUI（コードのみ、XIB/Storyboard/SwiftUI/Catalyst不使用）
+- **UI**: AppKit プログラマティックUI（100% Swiftコード、XIB/Storyboard/SwiftUI/Catalyst不使用）
 - **データベース**: SQLite3 C API（ラッパーなし）
 - **セキュリティ**: macOS Keychain
 - **HTML表示**: WebKit（JavaScript無効）
@@ -273,8 +273,8 @@ SwiftMailはApache License 2.0でリリースされています。詳細は[LICE
 
 ## 💬 サポートとコミュニティ
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/SwiftMail/issues)
-- **議論**: [GitHub Discussions](https://github.com/yourusername/SwiftMail/discussions)
+- **Issues**: [GitHub Issues](https://github.com/ayumuwall/SwiftMail/issues)
+- **議論**: [GitHub Discussions](https://github.com/ayumuwall/SwiftMail/discussions)
 - **開発チャット**: 準備中
 - **セキュリティ**: 脆弱性はGitHub Securityタブから報告
 
