@@ -172,17 +172,14 @@ final class AccountListViewController: NSViewController {
             self.updateButtonStates()
             self.onAccountsChanged?(self.accounts)
 
-            NSApp.stopModal()
             window?.close()
         }
 
         settingsVC.onCancel = { [weak window] in
-            NSApp.stopModal()
             window?.close()
         }
 
         window.makeKeyAndOrderFront(nil)
-        NSApp.runModal(for: window)
     }
 
     private func updateButtonStates() {

@@ -435,6 +435,34 @@ class SecureMailViewer {
 
 ## 🎨 UI/UX実装規則
 
+### ウィンドウ表示方針
+
+**重要**: 入力欄のあるウィンドウは**必ず通常のウィンドウ**として作成すること。モーダルウィンドウ（`NSApp.runModal(for:)`）は使用しない。
+
+```swift
+// ✅ 正しい実装（通常のウィンドウ）
+let window = NSWindow(contentViewController: viewController)
+window.title = "ウィンドウタイトル"
+window.styleMask = [.titled, .closable]
+window.makeKeyAndOrderFront(nil)
+
+// ❌ 禁止（モーダルウィンドウ）
+window.makeKeyAndOrderFront(nil)
+NSApp.runModal(for: window)  // ← 入力モード切り替えが効かなくなる
+```
+
+**理由**:
+- モーダルウィンドウでは`NSTextInputContext`の動作が制限される
+- 日本語入力モードの切り替えが正常に機能しない
+- コピー&ペーストなどの標準機能に影響が出る可能性がある
+- ユーザー体験が向上する（他のウィンドウも操作可能）
+
+**適用対象**:
+- アカウント設定画面
+- メール作成画面
+- 環境設定画面
+- その他すべての入力フォームを含むウィンドウ
+
 ### UI構築方針（LLM最適化）
 
 SwiftMailは**AppKitプログラマティックUI（コードベース）**を採用します。これはLLMによる開発に最適化された選択です。
