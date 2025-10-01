@@ -63,10 +63,13 @@ public final class POP3Client: @unchecked Sendable {
                 switch state {
                 case .ready:
                     self?.isConnected = true
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume()
                 case .failed(let error):
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume(throwing: POP3Error.connectionFailed(error))
                 case .waiting(let error):
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume(throwing: POP3Error.connectionFailed(error))
                 default:
                     break
@@ -77,7 +80,7 @@ public final class POP3Client: @unchecked Sendable {
         }
 
         // サーバーの初期応答を読み取る（+OK ...）
-        _ = try await receiveResponse()
+        _ = try await receiveResponse(expectsMultiline: false)
     }
 
     /// サーバーから切断
@@ -111,6 +114,46 @@ public final class POP3Client: @unchecked Sendable {
         }
     }
 
+    // MARK: - Connection Testing
+
+    /// 接続テスト（接続のみ確認して切断）
+    public func testConnection() async throws {
+        let endpoint = NWEndpoint.hostPort(
+            host: NWEndpoint.Host(host),
+            port: NWEndpoint.Port(integerLiteral: UInt16(port))
+        )
+
+        let parameters: NWParameters
+        if useTLS {
+            parameters = .tls
+        } else {
+            parameters = .tcp
+        }
+
+        let testConnection = NWConnection(to: endpoint, using: parameters)
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            testConnection.stateUpdateHandler = { state in
+                switch state {
+                case .ready:
+                    testConnection.stateUpdateHandler = nil
+                    testConnection.cancel()
+                    continuation.resume()
+                case .failed(let error):
+                    testConnection.stateUpdateHandler = nil
+                    continuation.resume(throwing: POP3Error.connectionFailed(error))
+                case .waiting(let error):
+                    testConnection.stateUpdateHandler = nil
+                    continuation.resume(throwing: POP3Error.connectionFailed(error))
+                default:
+                    break
+                }
+            }
+
+            testConnection.start(queue: .main)
+        }
+    }
+
     // MARK: - Mailbox Operations
 
     /// メールボックスの統計情報を取得
@@ -141,7 +184,7 @@ public final class POP3Client: @unchecked Sendable {
             throw POP3Error.notConnected
         }
 
-        let response = try await sendCommand("LIST")
+        let response = try await sendCommand("LIST", expectsMultiline: true)
         guard response.hasPrefix("+OK") else {
             throw POP3Error.invalidResponse(response)
         }
@@ -169,7 +212,7 @@ public final class POP3Client: @unchecked Sendable {
             throw POP3Error.notConnected
         }
 
-        let response = try await sendCommand("UIDL")
+        let response = try await sendCommand("UIDL", expectsMultiline: true)
         guard response.hasPrefix("+OK") else {
             throw POP3Error.invalidResponse(response)
         }
@@ -195,7 +238,7 @@ public final class POP3Client: @unchecked Sendable {
             throw POP3Error.notConnected
         }
 
-        let response = try await sendCommand("RETR \(messageNumber)")
+        let response = try await sendCommand("RETR \(messageNumber)", expectsMultiline: true)
         guard response.hasPrefix("+OK") else {
             if response.hasPrefix("-ERR") {
                 throw POP3Error.messageNotFound(messageNumber)
@@ -241,7 +284,7 @@ public final class POP3Client: @unchecked Sendable {
 
     // MARK: - Private Helpers
 
-    private func sendCommand(_ command: String) async throws -> String {
+    private func sendCommand(_ command: String, expectsMultiline: Bool = false) async throws -> String {
         guard let connection = connection else {
             throw POP3Error.notConnected
         }
@@ -261,56 +304,93 @@ public final class POP3Client: @unchecked Sendable {
         }
 
         // レスポンス受信
-        return try await receiveResponse()
+        return try await receiveResponse(expectsMultiline: expectsMultiline)
     }
 
-    private func receiveResponse() async throws -> String {
+    private func receiveResponse(expectsMultiline: Bool) async throws -> String {
         guard let connection = connection else {
             throw POP3Error.notConnected
         }
 
         var fullResponse = ""
-        var isMultiline = false
+        var iterationCount = 0
+        let maxIterations = 100 // 無限ループ防止
 
         // マルチライン応答対応（LISTやUIDLなど）
-        while true {
-            let chunk = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
-                connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, _, error in
+        while iterationCount < maxIterations {
+            iterationCount += 1
+
+            // Taskがキャンセルされた場合は終了
+            try Task.checkCancellation()
+
+            let (chunk, isComplete) = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(String, Bool), Error>) in
+                connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, isComplete, error in
                     if let error = error {
                         continuation.resume(throwing: error)
-                    } else if let data = data, let response = String(data: data, encoding: .utf8) {
-                        continuation.resume(returning: response)
+                    } else if let data = data {
+                        let response = String(decoding: data, as: UTF8.self)
+                        continuation.resume(returning: (response, isComplete))
+                    } else if isComplete {
+                        continuation.resume(returning: ("", true))
                     } else {
                         continuation.resume(throwing: POP3Error.invalidResponse("Empty response"))
                     }
                 }
             }
 
-            fullResponse += chunk
+            if !chunk.isEmpty {
+                fullResponse += chunk
+            }
 
-            // マルチライン判定
-            if fullResponse.hasPrefix("+OK") && fullResponse.contains("\r\n") {
-                let firstLine = fullResponse.components(separatedBy: "\r\n")[0]
-                // LISTやUIDLの場合はマルチライン
-                if fullResponse.contains(".\r\n") {
-                    break // 終端検出
-                } else if !firstLine.contains("octets") {
-                    // 単一行レスポンス
-                    break
-                }
-                isMultiline = true
-            } else if fullResponse.hasPrefix("-ERR") {
+            if shouldFinishResponse(fullResponse, expectsMultiline: expectsMultiline) {
                 break
             }
 
-            // タイムアウト防止（簡易実装）
+            if isComplete {
+                break
+            }
+
+            // タイムアウト防止
             if fullResponse.count > 1_000_000 {
                 throw POP3Error.invalidResponse("Response too large")
             }
         }
 
+        if iterationCount >= maxIterations {
+            throw POP3Error.invalidResponse("Too many iterations")
+        }
+
+        guard !fullResponse.isEmpty else {
+            throw POP3Error.invalidResponse("Empty response")
+        }
+
         return fullResponse
     }
+}
+
+private func shouldFinishResponse(_ response: String, expectsMultiline: Bool) -> Bool {
+    guard !response.isEmpty else { return false }
+
+    // エラー応答は単一行
+    if response.hasPrefix("-ERR") {
+        return response.contains("\r\n") || response.contains("\n")
+    }
+
+    guard response.hasPrefix("+OK") else {
+        // 未知のレスポンス: 改行が来た時点で終了させて上位で検証
+        return response.contains("\r\n") || response.contains("\n")
+    }
+
+    if expectsMultiline {
+        // マルチライン終端は単独のドット行
+        if response.hasSuffix("\r\n.\r\n") || response.hasSuffix("\n.\n") {
+            return true
+        }
+        return false
+    }
+
+    // 単一行レスポンス
+    return response.contains("\r\n") || response.contains("\n")
 }
 
 // MARK: - Supporting Types

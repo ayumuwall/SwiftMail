@@ -69,10 +69,13 @@ public final class SMTPClient: @unchecked Sendable {
                 switch state {
                 case .ready:
                     self?.isConnected = true
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume()
                 case .failed(let error):
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume(throwing: SMTPError.connectionFailed(error))
                 case .waiting(let error):
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume(throwing: SMTPError.connectionFailed(error))
                 default:
                     break
@@ -159,6 +162,14 @@ public final class SMTPClient: @unchecked Sendable {
         }
     }
 
+    // MARK: - Connection Testing
+
+    /// 接続テスト（接続のみ確認して切断）
+    public func testConnection() async throws {
+        try await connect()
+        try await disconnect()
+    }
+
     // MARK: - Mail Sending
 
     /// メール送信（完全なトランザクション）
@@ -226,9 +237,13 @@ public final class SMTPClient: @unchecked Sendable {
         }
 
         var fullResponse = ""
+        var iterationCount = 0
+        let maxIterations = 100 // 無限ループ防止
 
         // マルチラインレスポンス対応（250-... と 250 ...）
-        while true {
+        while iterationCount < maxIterations {
+            iterationCount += 1
+
             let chunk = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
                 connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, _, error in
                     if let error = error {
@@ -243,14 +258,29 @@ public final class SMTPClient: @unchecked Sendable {
 
             fullResponse += chunk
 
-            // マルチライン判定（"250-" → 続く、"250 " → 終了）
-            let lines = fullResponse.components(separatedBy: "\r\n")
-            if let lastLine = lines.last, lastLine.count >= 4 {
-                let separator = lastLine.dropFirst(3).prefix(1)
+            // 改行が含まれている場合のみ判定
+            if fullResponse.contains("\r\n") {
+                // マルチライン判定（"250-" → 続く、"250 " → 終了）
+                let lines = fullResponse.components(separatedBy: "\r\n")
+                if let lastLine = lines.last, lastLine.count >= 4 {
+                    let separator = lastLine.dropFirst(3).prefix(1)
 
-                // スペースで終了（単一行または最終行）
-                if separator == " " {
-                    break
+                    // スペースで終了（単一行または最終行）
+                    if separator == " " {
+                        break
+                    }
+                }
+
+                // 単一行レスポンス（220, 354など）
+                if lines.count >= 2 && lines[0].count >= 3 {
+                    let firstLineCode = String(lines[0].prefix(3))
+                    // 3桁のコード + スペース/ハイフン以外の文字がある場合は単一行
+                    if Int(firstLineCode) != nil && lines[0].count >= 4 {
+                        let separator = lines[0].dropFirst(3).prefix(1)
+                        if separator == " " {
+                            break
+                        }
+                    }
                 }
             }
 
@@ -258,6 +288,10 @@ public final class SMTPClient: @unchecked Sendable {
             if fullResponse.count > 1_000_000 {
                 throw SMTPError.invalidResponse("Response too large")
             }
+        }
+
+        if iterationCount >= maxIterations {
+            throw SMTPError.invalidResponse("Too many iterations")
         }
 
         return fullResponse

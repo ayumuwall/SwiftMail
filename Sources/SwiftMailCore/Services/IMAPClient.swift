@@ -64,10 +64,13 @@ public final class IMAPClient: @unchecked Sendable {
                 switch state {
                 case .ready:
                     self?.isConnected = true
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume()
                 case .failed(let error):
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume(throwing: IMAPError.connectionFailed(error))
                 case .waiting(let error):
+                    self?.connection?.stateUpdateHandler = nil
                     continuation.resume(throwing: IMAPError.connectionFailed(error))
                 default:
                     break
@@ -165,6 +168,14 @@ public final class IMAPClient: @unchecked Sendable {
         }
 
         return FolderInfo(name: folderName, messageCount: messageCount, uidNext: uidNext)
+    }
+
+    // MARK: - Connection Testing
+
+    /// 接続テスト（接続のみ確認して切断）
+    public func testConnection() async throws {
+        try await connect()
+        disconnect()
     }
 
     // MARK: - Message Operations

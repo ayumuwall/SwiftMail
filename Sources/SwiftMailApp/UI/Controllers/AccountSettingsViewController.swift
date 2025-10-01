@@ -1,6 +1,39 @@
 import AppKit
 import SwiftMailCore
 
+// MARK: - Timeout Helper
+
+struct TimeoutError: Error, LocalizedError {
+    var errorDescription: String? { "接続がタイムアウトしました" }
+}
+
+func withTimeout<T: Sendable>(seconds: TimeInterval, operation: @escaping @Sendable () async throws -> T) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        // 操作タスク
+        group.addTask {
+            try await operation()
+        }
+
+        // タイムアウトタスク
+        group.addTask {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            throw TimeoutError()
+        }
+
+        // 最初に完了したタスクの結果を取得
+        do {
+            let result = try await group.next()!
+            group.cancelAll() // 残りのタスクをキャンセル
+            return result
+        } catch {
+            group.cancelAll() // エラー時も残りのタスクをキャンセル
+            throw error
+        }
+    }
+}
+
+// MARK: - UI Components
+
 /// コピー&ペースト可能なセキュアテキストフィールド
 final class CopyableSecureTextField: NSSecureTextField {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -169,6 +202,9 @@ final class AccountSettingsViewController: NSViewController {
     var onCancel: (() -> Void)?
     private var editingAccount: Account?
     private var isEditMode = false
+
+    private var progressIndicator: NSProgressIndicator?
+    private var progressLabel: NSTextField?
 
     // MARK: - Lifecycle
 
@@ -470,12 +506,246 @@ final class AccountSettingsViewController: NSViewController {
     }
 
     @objc private func testConnectionTapped() {
-        // TODO: 接続テスト実装
-        showAlert(title: "接続テスト", message: "接続テスト機能は実装予定です")
+        Task { @MainActor in
+            await performConnectionTest()
+        }
     }
 
     @objc private func serverTypeChanged() {
         // プロトコル変更時の処理（必要に応じて実装）
+    }
+
+    // MARK: - Connection Test
+
+    @MainActor
+    private func performConnectionTest() async {
+        // 入力値の検証
+        guard !receiveHostField.stringValue.isEmpty else {
+            showAlert(title: "入力エラー", message: "受信サーバーを入力してください")
+            return
+        }
+
+        guard let receivePort = Int(receivePortField.stringValue), receivePort > 0, receivePort < 65536 else {
+            showAlert(title: "入力エラー", message: "有効な受信ポート番号を入力してください")
+            return
+        }
+
+        guard !smtpHostField.stringValue.isEmpty else {
+            showAlert(title: "入力エラー", message: "送信サーバーを入力してください")
+            return
+        }
+
+        guard let smtpPort = Int(smtpPortField.stringValue), smtpPort > 0, smtpPort < 65536 else {
+            showAlert(title: "入力エラー", message: "有効な送信ポート番号を入力してください")
+            return
+        }
+
+        // プログレスインジケーターを表示
+        showProgressIndicator()
+
+        var receiveResult = ""
+        var sendResult = ""
+
+        // 受信サーバーテスト
+        do {
+            let serverType = serverTypePopUp.indexOfSelectedItem == 0 ? "IMAP" : "POP3"
+            let tlsStatus = receiveTLSCheckbox.state == .on ? "TLS有効" : "TLS無効"
+
+            updateProgress("""
+            【受信サーバーテスト】
+            プロトコル: \(serverType)
+            ホスト: \(receiveHostField.stringValue)
+            ポート: \(receivePort)
+            セキュリティ: \(tlsStatus)
+
+            接続中...
+            """)
+
+            if serverType == "IMAP" {
+                let imapClient = IMAPClient(
+                    host: receiveHostField.stringValue,
+                    port: receivePort,
+                    useTLS: receiveTLSCheckbox.state == .on
+                )
+                do {
+                    try await withTimeout(seconds: 10) {
+                        try await imapClient.testConnection()
+                    }
+                    receiveResult = "✅ 受信サーバー (\(serverType)): 接続成功"
+                } catch {
+                    imapClient.disconnect() // タイムアウト時に接続をクリーンアップ
+                    throw error
+                }
+            } else {
+                let pop3Client = POP3Client(
+                    host: receiveHostField.stringValue,
+                    port: receivePort,
+                    useTLS: receiveTLSCheckbox.state == .on
+                )
+                do {
+                    try await withTimeout(seconds: 10) {
+                        try await pop3Client.testConnection()
+                    }
+                    receiveResult = "✅ 受信サーバー (\(serverType)): 接続成功"
+                } catch {
+                    try? await pop3Client.disconnect() // タイムアウト時に接続をクリーンアップ
+                    throw error
+                }
+            }
+        } catch is TimeoutError {
+            receiveResult = "❌ 受信サーバー: 接続タイムアウト（10秒）"
+        } catch {
+            receiveResult = "❌ 受信サーバー: 接続失敗\n\(error.localizedDescription)"
+        }
+
+        // 送信サーバーテスト
+        do {
+            let tlsStatus = smtpTLSCheckbox.state == .on ? "TLS有効" : "TLS無効"
+
+            updateProgress("""
+            【送信サーバーテスト】
+            プロトコル: SMTP
+            ホスト: \(smtpHostField.stringValue)
+            ポート: \(smtpPort)
+            セキュリティ: \(tlsStatus)
+
+            接続中...
+            """)
+
+            let smtpClient = SMTPClient(
+                host: smtpHostField.stringValue,
+                port: smtpPort,
+                useTLS: smtpTLSCheckbox.state == .on
+            )
+            try await withTimeout(seconds: 10) {
+                try await smtpClient.testConnection()
+            }
+            sendResult = "✅ 送信サーバー (SMTP): 接続成功"
+        } catch is TimeoutError {
+            sendResult = "❌ 送信サーバー: 接続タイムアウト（10秒）"
+        } catch {
+            sendResult = "❌ 送信サーバー: 接続失敗\n\(error.localizedDescription)"
+        }
+
+        // プログレスインジケーターを非表示
+        hideProgressIndicator()
+
+        // 結果を表示
+        let message = "\(receiveResult)\n\n\(sendResult)"
+        showAlert(title: "接続テスト結果", message: message)
+    }
+
+    @MainActor
+    private func showProgressIndicator() {
+        // 背景オーバーレイ（ウィンドウ全体をホワイトアウト）
+        let overlayView = NSView()
+        overlayView.translatesAutoresizingMaskIntoConstraints = false
+        overlayView.wantsLayer = true
+        overlayView.layer?.backgroundColor = NSColor.windowBackgroundColor.withAlphaComponent(0.85).cgColor
+
+        view.addSubview(overlayView)
+
+        // プログレスインジケーターを作成
+        let indicator = NSProgressIndicator()
+        indicator.style = .spinning
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        indicator.startAnimation(nil)
+
+        let titleLabel = NSTextField(labelWithString: "接続テスト中...")
+        titleLabel.font = NSFont.boldSystemFont(ofSize: NSFont.systemFontSize + 2)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.alignment = .center
+
+        let detailLabel = NSTextField(wrappingLabelWithString: "")
+        detailLabel.translatesAutoresizingMaskIntoConstraints = false
+        detailLabel.alignment = .center
+        detailLabel.maximumNumberOfLines = 5
+        detailLabel.preferredMaxLayoutWidth = 350
+
+        let containerView = NSView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.wantsLayer = true
+        containerView.layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
+        containerView.layer?.cornerRadius = 12
+        containerView.layer?.borderWidth = 1
+        containerView.layer?.borderColor = NSColor.separatorColor.cgColor
+
+        // シャドウを追加
+        containerView.shadow = NSShadow()
+        containerView.layer?.shadowOpacity = 0.3
+        containerView.layer?.shadowRadius = 10
+        containerView.layer?.shadowOffset = NSSize(width: 0, height: -2)
+
+        containerView.addSubview(indicator)
+        containerView.addSubview(titleLabel)
+        containerView.addSubview(detailLabel)
+
+        overlayView.addSubview(containerView)
+
+        NSLayoutConstraint.activate([
+            // オーバーレイはビュー全体を覆う
+            overlayView.topAnchor.constraint(equalTo: view.topAnchor),
+            overlayView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            overlayView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            overlayView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            // コンテナを中央配置
+            containerView.centerXAnchor.constraint(equalTo: overlayView.centerXAnchor),
+            containerView.centerYAnchor.constraint(equalTo: overlayView.centerYAnchor),
+            containerView.widthAnchor.constraint(equalToConstant: 400),
+            containerView.heightAnchor.constraint(greaterThanOrEqualToConstant: 150),
+
+            // スピナーを上部中央に配置
+            indicator.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            indicator.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 24),
+
+            // タイトルラベル
+            titleLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            titleLabel.topAnchor.constraint(equalTo: indicator.bottomAnchor, constant: 16),
+            titleLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+
+            // 詳細ラベル
+            detailLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
+            detailLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
+            detailLabel.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 20),
+            detailLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -20),
+            detailLabel.bottomAnchor.constraint(lessThanOrEqualTo: containerView.bottomAnchor, constant: -24)
+        ])
+
+        progressIndicator = indicator
+        progressLabel = detailLabel
+
+        // オーバーレイビューに参照を保持（後で削除するため）
+        overlayView.identifier = NSUserInterfaceItemIdentifier("progressOverlay")
+
+        // ボタンを無効化
+        testButton.isEnabled = false
+        saveButton.isEnabled = false
+        cancelButton.isEnabled = false
+    }
+
+    @MainActor
+    private func hideProgressIndicator() {
+        progressIndicator?.stopAnimation(nil)
+
+        // オーバーレイビューを削除
+        if let overlayView = view.subviews.first(where: { $0.identifier?.rawValue == "progressOverlay" }) {
+            overlayView.removeFromSuperview()
+        }
+
+        progressIndicator = nil
+        progressLabel = nil
+
+        // ボタンを有効化
+        testButton.isEnabled = true
+        saveButton.isEnabled = true
+        cancelButton.isEnabled = true
+    }
+
+    @MainActor
+    private func updateProgress(_ message: String) {
+        progressLabel?.stringValue = message
     }
 
     // MARK: - Helpers
