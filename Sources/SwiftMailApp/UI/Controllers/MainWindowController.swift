@@ -35,6 +35,10 @@ final class MainWindowController: NSWindowController {
         window?.toolbar = toolbar
     }
 
+    func showComposeWindow() {
+        composeButtonTapped()
+    }
+
     @objc private func composeButtonTapped() {
         let composeVC = MessageComposeViewController()
         composeVC.onSend = { composedMessage in
