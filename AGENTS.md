@@ -809,7 +809,7 @@ class MessageParserTests: XCTestCase {
 
 ### Xcode設定
 ```
-Swift Language Version: 5.9
+Swift Language Version: 6.2
 Deployment Target: macOS 12.0
 App Sandbox: Enabled
 Hardened Runtime: Enabled

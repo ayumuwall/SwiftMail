@@ -109,7 +109,7 @@ SwiftMail/
 - **ユニットテスト**: コアモデルとデータベース初期化の基本シナリオをカバー。
 
 ### 技術スタック
-- **言語**: Swift 6.0
+- **言語**: Swift 6.2
 - **UI**: AppKit プログラマティックUI（100% Swiftコード、XIB/Storyboard/SwiftUI/Catalyst不使用）
 - **データベース**: SQLite3 C API（ラッパーなし）
 - **セキュリティ**: macOS Keychain
