@@ -1,4 +1,4 @@
-# SwiftMail - Claude Code 開発ガイド
+# SwiftMail - 開発ガイド
 
 ## プロジェクト概要
 SwiftMailは、macOS専用の軽量メールクライアントです。Thunderbirdなどの肥大化したメールクライアントとは対照的に、メールの読み書きという本質的な機能のみに特化しています。
