@@ -7,14 +7,14 @@ final class MessageComposeViewController: NSViewController {
     // MARK: - UI Components
 
     private let toTextField: NSTextField = {
-        let field = NSTextField()
+        let field = ASCIIOnlyTextField()
         field.placeholderString = "宛先"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
     }()
 
     private let ccTextField: NSTextField = {
-        let field = NSTextField()
+        let field = ASCIIOnlyTextField()
         field.placeholderString = "CC"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field

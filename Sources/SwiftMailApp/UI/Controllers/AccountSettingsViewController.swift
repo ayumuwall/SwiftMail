@@ -27,6 +27,36 @@ final class CopyableSecureTextField: NSSecureTextField {
         }
         return super.validateUserInterfaceItem(item)
     }
+
+    override func becomeFirstResponder() -> Bool {
+        let result = super.becomeFirstResponder()
+        if result {
+            // 日本語入力を無効化（英数字入力のみ）
+            NSTextInputContext.current?.discardMarkedText()
+        }
+        return result
+    }
+}
+
+/// 半角英数字専用テキストフィールド（メールアドレス、サーバー名等）
+final class ASCIIOnlyTextField: NSTextField {
+
+    override func becomeFirstResponder() -> Bool {
+        let result = super.becomeFirstResponder()
+        if result {
+            // フォーカス時に日本語入力をリセット
+            DispatchQueue.main.async { [weak self] in
+                self?.currentEditor()?.inputContext?.invalidateCharacterCoordinates()
+            }
+        }
+        return result
+    }
+
+    override func textDidBeginEditing(_ notification: Notification) {
+        super.textDidBeginEditing(notification)
+        // 編集開始時にも日本語入力をリセット
+        currentEditor()?.inputContext?.invalidateCharacterCoordinates()
+    }
 }
 
 @MainActor
@@ -51,42 +81,42 @@ final class AccountSettingsViewController: NSViewController {
     }()
 
     private let emailField: NSTextField = {
-        let field = NSTextField()
+        let field = ASCIIOnlyTextField()
         field.placeholderString = "user@example.com"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
     }()
 
     private let imapHostField: NSTextField = {
-        let field = NSTextField()
+        let field = ASCIIOnlyTextField()
         field.placeholderString = "imap.example.com"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
     }()
 
     private let imapPortField: NSTextField = {
-        let field = NSTextField()
+        let field = ASCIIOnlyTextField()
         field.placeholderString = "993"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
     }()
 
     private let smtpHostField: NSTextField = {
-        let field = NSTextField()
+        let field = ASCIIOnlyTextField()
         field.placeholderString = "smtp.example.com"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
     }()
 
     private let smtpPortField: NSTextField = {
-        let field = NSTextField()
+        let field = ASCIIOnlyTextField()
         field.placeholderString = "587"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
     }()
 
     private let usernameField: NSTextField = {
-        let field = NSTextField()
+        let field = ASCIIOnlyTextField()
         field.placeholderString = "user@example.com"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
