@@ -1,220 +1,313 @@
 # SwiftMail
 
-<!-- バッジ: 必要に応じてワークフロー/ブランチを調整してください -->
+> **Lightning-fast, featherweight email client for macOS (pre-alpha)**
 
-<p align="center">
-  <!-- Build (GitHub Actions) -->
-  <a href="https://github.com/ayumuwall/SwiftMail/actions/workflows/ci.yml">
-    <img alt="Build"
-         src="https://img.shields.io/github/actions/workflow/status/ayumuwall/SwiftMail/ci.yml?label=Build&logo=githubactions&logoColor=white&branch=main">
-  </a>
+**English** | [日本語](README.md)
 
-  <!-- License -->
+---
 
-  <a href="https://github.com/ayumuwall/SwiftMail/blob/main/LICENSE">
-    <img alt="License" src="https://img.shields.io/github/license/ayumuwall/SwiftMail?label=License">
-  </a>
+## 📑 Table of Contents
 
-  <!-- Project status -->
-
-  <img alt="Status" src="https://img.shields.io/badge/status-pre--alpha-orange">
-
-  <!-- Platform / Swift -->
-
-  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS-informational?logo=apple">
-  <img alt="Swift" src="https://img.shields.io/badge/Swift-5.10%2B-F05138?logo=swift&logoColor=white">
-
-  <!-- Issues / PRs -->
-
-  <a href="https://github.com/ayumuwall/SwiftMail/issues">
-    <img alt="Issues" src="https://img.shields.io/github/issues/ayumuwall/SwiftMail?label=Issues">
-  </a>
-  <a href="https://github.com/ayumuwall/SwiftMail/pulls">
-    <img alt="PRs Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen?logo=github">
-  </a>
-
-  <!-- Code style: 既定は SwiftLint。SwiftFormat を使う場合は下を有効化して上を削除 -->
-
-  <img alt="Code Style: SwiftLint" src="https://img.shields.io/badge/code%20style-SwiftLint-4B32C3">
-  <!-- <img alt="Code Style: SwiftFormat" src="https://img.shields.io/badge/code%20style-SwiftFormat-1A7FD4"> -->
-
-  <!-- Optional: Coverage (Codecov を使う場合のみ) -->
-
-  <!-- <a href="https://codecov.io/gh/ayumuwall/SwiftMail">
-        <img alt="Coverage" src="https://img.shields.io/codecov/c/gh/ayumuwall/SwiftMail?label=coverage&logo=codecov">
-       </a> -->
-
-  <!-- Optional: Releases / Downloads -->
-
-  <a href="https://github.com/ayumuwall/SwiftMail/releases">
-    <img alt="Release" src="https://img.shields.io/github/v/release/ayumuwall/SwiftMail?include_prereleases&label=Release">
-  </a>
-  <!-- <img alt="Downloads" src="https://img.shields.io/github/downloads/ayumuwall/SwiftMail/total?label=Downloads"> -->
-</p>
-
-<!-- Badges: replace workflow file/branch if needed -->
-
-<p align="center">
-  <!-- Build (GitHub Actions) -->
-  <a href="https://github.com/ayumuwall/SwiftMail/actions/workflows/ci.yml">
-    <img alt="Build"
-         src="https://img.shields.io/github/actions/workflow/status/ayumuwall/SwiftMail/ci.yml?label=Build&logo=githubactions&logoColor=white&branch=main">
-  </a>
-
-  <!-- License -->
-
-  <a href="https://github.com/ayumuwall/SwiftMail/blob/main/LICENSE">
-    <img alt="License" src="https://img.shields.io/github/license/ayumuwall/SwiftMail?label=License">
-  </a>
-
-  <!-- Project status -->
-
-  <img alt="Status" src="https://img.shields.io/badge/status-pre--alpha-orange">
-
-  <!-- Platform / Swift -->
-
-  <img alt="Platform" src="https://img.shields.io/badge/platform-macOS-informational?logo=apple">
-  <img alt="Swift" src="https://img.shields.io/badge/Swift-5.10%2B-F05138?logo=swift&logoColor=white">
-
-  <!-- Issues / PRs -->
-
-  <a href="https://github.com/ayumuwall/SwiftMail/issues">
-    <img alt="Issues" src="https://img.shields.io/github/issues/ayumuwall/SwiftMail?label=Issues">
-  </a>
-  <a href="https://github.com/ayumuwall/SwiftMail/pulls">
-    <img alt="PRs Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen?logo=github">
-  </a>
-
-  <!-- Code style: SwiftLint by default; switch to SwiftFormat if preferred -->
-
-  <img alt="Code Style: SwiftLint" src="https://img.shields.io/badge/code%20style-SwiftLint-4B32C3">
-  <!-- <img alt="Code Style: SwiftFormat" src="https://img.shields.io/badge/code%20style-SwiftFormat-1A7FD4"> -->
-
-  <!-- Optional: Coverage (enable if using Codecov) -->
-
-  <!-- <a href="https://codecov.io/gh/ayumuwall/SwiftMail">
-        <img alt="Coverage" src="https://img.shields.io/codecov/c/gh/ayumuwall/SwiftMail?label=coverage&logo=codecov">
-       </a> -->
-
-  <!-- Optional: Releases / Downloads -->
-
-  <a href="https://github.com/ayumuwall/SwiftMail/releases">
-    <img alt="Release" src="https://img.shields.io/github/v/release/ayumuwall/SwiftMail?include_prereleases&label=Release">
-  </a>
-  <!-- <img alt="Downloads" src="https://img.shields.io/github/downloads/ayumuwall/SwiftMail/total?label=Downloads"> -->
-</p>
-
-> **An ultra‑light, ultra‑fast email client for macOS (pre‑alpha)**
-
-**English** | [日本語](README.ja.md)
+- [What is this?](#what-is-this)
+- [Design Mockup](#️-design-mockup)
+- [Why We Built This](#-why-we-built-this)
+- [Getting Started (Developers)](#-getting-started-developers)
+  - [Requirements](#requirements)
+  - [Build from Source](#build-from-source)
+- [Architecture](#️-architecture)
+- [What's Currently Implemented](#-whats-currently-implemented)
+  - [Tech Stack](#tech-stack)
+  - [UI Philosophy (LLM-Optimized)](#ui-philosophy-llm-optimized)
+- [Performance Goals](#-performance-goals)
+- [Development](#️-development)
+  - [Development Philosophy](#development-philosophy)
+  - [Development Guide](#development-guide)
+- [Contributing](#-contributing)
+  - [Contribution Rules](#contribution-rules)
+- [Roadmap](#-roadmap)
+- [License](#-license)
+- [Support & Community](#-support--community)
+- [Why SwiftMail?](#-why-swiftmail)
 
 ---
 
 ## What is this?
 
-SwiftMail is a macOS‑only email client built with a single goal: **be fast, light, and simple**. Many modern mail apps feel heavy because they try to do everything. SwiftMail focuses on one thing—**email**—and removes the rest so you can get in, read, reply, and move on.
+SwiftMail is a macOS-only email client laser-focused on **speed, simplicity, and minimalism**. Modern email apps have become bloated with features. SwiftMail takes a different approach: **email should do email, and nothing else**.
 
-* **Who it's for:** People who value speed and a clean, native experience over extra features
-* **OS support:** macOS 12 or later (planned)
-* **Status:** Pre‑alpha (foundation and UI scaffolding in progress)
+### What SwiftMail Does
+- 📋 **Blazing fast** - Goals: <1s launch, 10ms search across 10,000 emails
+- 📋 **POP3/IMAP support** - Pure Swift implementation, zero external libraries
+- 📋 **Security-first** - Keychain integration, TLS 1.2+, JavaScript disabled
+- 📋 **Offline-ready** - Full functionality without network
+- 📋 **Mail.app compatible** - Familiar keyboard shortcuts (⌘N, ⌘R, ⌘D)
+- 📋 **Privacy-focused** - No tracking, no analytics, no telemetry
 
----
+### What SwiftMail Doesn't Do
+- ❌ Calendar integration
+- ❌ Task management
+- ❌ RSS feeds
+- ❌ Chat features
+- ❌ Plugins & themes
+- ❌ AI & smart features
+- ❌ Social media integration
 
-## Why build it? (The experience we aim for)
+**This is intentional.** Email should be email.
 
-* **Instant launch**: Targeting under 1 second to open and ready to use
-* **Low memory usage**: Aiming for < 100 MB in normal use
-* **Fast search**: Snappy local search across thousands of messages
-* **Native feel**: 100% macOS UI (AppKit), keyboard‑first
-* **Privacy‑first**: No telemetry or tracking. JavaScript in HTML mail disabled by default
+## 🖼️ Design Mockup
 
-> **Philosophy:** Add by **subtracting**. We protect speed and clarity by saying no to features that aren't core to email.
+<div align="center">
+  <img src="assets/mockup-main.png" alt="SwiftMail Design Mockup" width="800">
+  <p><em>Target UI: Clean, focused, zero distractions</em></p>
+</div>
 
----
+## 🙏 Why We Built This
 
-## What SwiftMail **will** do (includes planned work)
+Modern email clients have lost their way. They're bloated, slow, and overcomplicated:
 
-* POP3 / IMAP / SMTP basics (with local cache & offline behavior)
-* Message list & detail views (plain text first; safe HTML rendering)
-* Simple local search (fast full‑text)
-* Familiar shortcuts similar to Apple Mail
+- **Thunderbird** - Uses 350MB+ of RAM just to read email
+- **Outlook** - Crammed with calendars, tasks, Teams, and everything else
+- **Mail.app** - Not bad, but we can do better
 
-## What SwiftMail **won't** do (on purpose)
+**SwiftMail's vision is different:**
+- Target: <100MB RAM even with 1,000 emails loaded
+- Target: <1s startup time
+- Focus: Email only. But do it perfectly.
 
-No calendar, tasks, RSS, chat, plug‑ins/themes, AI auto‑categorization, or social integrations—**anything that drifts from the core of email is out of scope**.
+## 🚀 Getting Started (Developers)
 
----
+### Requirements
+- macOS 12.0 (Monterey) or later
+- Xcode 15.0+
+- 2GB+ RAM
+- 100MB disk space
 
-## Current progress
+### Build from Source
 
-* ✅ App skeleton and three‑pane UI scaffold
-* ✅ Design principles & contributor guidelines
-* 🚧 Database layer (SQLite3) and repository implementation
-* 🚧 Protocol layer groundwork (IMAP / POP3 / SMTP)
+```bash
+# Clone the repo
+git clone https://github.com/ayumuwall/SwiftMail.git
+cd SwiftMail
 
-> Pre‑alpha means we aren't distributing builds yet. You can follow along on GitHub.
+# Build/test with SwiftPM
+swift build
+swift test
 
----
+# Open in Xcode
+open Package.swift
 
-## How it's fast (gentle technical notes)
+# Note: The AppKit app is currently pre-alpha with placeholder UI
+```
 
-* **Minimal dependencies**: Pure Swift with macOS system frameworks
-* **Direct SQLite3**: Lightweight local storage for speed
-* **Simple UI**: Minimal rendering, optimized interactions
-* **Safe HTML**: JavaScript disabled and trackers reduced by default
+**Important**: SwiftMail has **zero external dependencies**. We use Swift Package Manager (SPM) as our build system, but we don't add any external packages. No CocoaPods, no Carthage, no third-party libraries. Just pure Swift and macOS system frameworks (Foundation/AppKit/Security).
 
----
+## 🏗️ Architecture
 
-## Who will like it
+```
+SwiftMail/
+├── Package.swift              # Multi-target configuration (SwiftPM)
+├── Sources/
+│   ├── SwiftMailCore/         # Domain models/protocols/policies
+│   ├── SwiftMailDatabase/     # SQLite3 C API wrapper & repository
+│   └── SwiftMailApp/          # AppKit entry point & UI layer
+└── Tests/
+    ├── SwiftMailCoreTests/    # Model tests
+    └── SwiftMailDatabaseTests/# Data layer tests
+```
 
-* You want **speed** and **quiet** in your email app
-* You prefer a **just‑email** workflow without extra integrations
-* You enjoy a native macOS look & feel
+## 🧱 What's Currently Implemented
+- **Domain layer**: Account/Message/Attachment/Folder models with retry policies
+- **Database layer**: Direct SQLite3 access via `MailDatabase` and `SQLiteMailRepository`. Supports WAL, FTS5, and attachment BLOB management
+- **UI layer**: AppKit three-pane layout (folders/message list/detail) with repository integration and placeholder display
+- **Unit tests**: Basic scenarios covering core models and database initialization
 
----
+### Tech Stack
+- **Language**: Swift 6.2
+- **UI**: AppKit programmatic UI (100% Swift code, no XIB/Storyboard/SwiftUI/Catalyst)
+- **Database**: SQLite3 C API (no wrapper)
+- **Security**: macOS Keychain
+- **HTML rendering**: WebKit (JavaScript disabled)
 
-## Screenshots (work in progress)
+### UI Philosophy (LLM-Optimized)
 
-> UI is under active development and may change.
+SwiftMail uses **AppKit programmatic UI**, with all UI written in Swift code.
 
-<p align="center">
-  <img src="assets/mockup-main.png" alt="SwiftMail Mockup" width="800" />
-</p>
+#### Why Programmatic UI?
 
----
+| Approach | Used? | Performance | LLM Development | Reason |
+|---------|-------|-------------|-----------------|--------|
+| **AppKit (Code)** | ✅ | ⚡️⚡️⚡️ Fastest | 🤖🤖🤖 Optimal | All code in .swift files, LLM fully understands |
+| SwiftUI | ❌ | 🐢 Slow | 🤖🤖 Good | Runtime overhead, increased memory |
+| XIB/Storyboard | ❌ | 🐌 Slow launch | ❌ Can't edit | Binary files, LLM can't parse |
+| Catalyst | ❌ | 🐌 Degraded | 🤖 Possible | Don't need iOS compatibility layer |
 
-## FAQ
+**Programmatic UI example**:
+```swift
+// ✅ SwiftMail implementation style
+final class MessageListViewController: NSViewController {
+    private let tableView = NSTableView()
+    private let scrollView = NSScrollView()
 
-**Why no calendar or tasks?**
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.documentView = tableView
+        view.addSubview(scrollView)
 
-Because other apps do those well already. By focusing on reading and composing email, SwiftMail stays fast and light.
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+    }
+}
+```
 
-**Do you collect telemetry or track usage?**
+**Benefits for LLM development**:
+- ✅ All UI code self-contained in .swift files
+- ✅ LLM can grasp full context
+- ✅ Clear version control diffs
+- ✅ Zero XIB/Storyboard load time (faster startup)
+- ✅ No SwiftUI abstraction layer (reduced memory)
 
-No. We don't collect behavioral data. JavaScript in HTML emails is disabled by default.
+## 📊 Performance Goals
 
-**When can I try it?**
+Target metrics we're aiming for:
 
-We're still in pre‑alpha. Please star or watch the repo to follow progress.
+| Metric | SwiftMail (Target) | Thunderbird | Mail.app |
+|--------|-------------------|-------------|----------|
+| Launch time | < 1s | ~5s | ~2s |
+| Memory (idle) | < 50MB | 350MB | 180MB |
+| Memory (1000 emails) | < 100MB | 520MB | 280MB |
+| Search (10000 emails) | < 10ms | 150ms | 50ms |
 
----
+*Competitor measurements: Tested on MacBook Air M1, 8GB RAM*
 
-## Contribute & follow
+## 🛠️ Development
 
-* Report bugs and feature requests: [GitHub Issues](../../issues)
-* Propose ideas and discuss: [GitHub Discussions](../../discussions)
-* Security: use the Security tab on GitHub
+### Prerequisites
+- Xcode 15.0+
+- macOS 12.0+ development machine
+- Apple Developer account (for signing)
 
-> ⚠️ For build steps, coding conventions, and deeper technical details, see **AGENTS.md** (developer‑focused).
+### Development Philosophy
+```swift
+// ❌ Bad example
+import SomeThirdPartyLibrary
+class ComplexFeatureViewController: NSViewController {
+    // 500+ lines of code
+}
 
----
+// ✅ Good example
+import Foundation
+class MailListViewController: NSViewController {
+    // Single responsibility, <200 lines
+}
+```
 
-## License
+### Development Guide
+For detailed development guidelines, coding conventions, and architectural decisions, see [AGENTS.md](AGENTS.md).
 
-Released under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+## 🤝 Contributing
 
----
+We welcome contributions from anyone who shares our minimalist philosophy!
 
-### Credits
+### How to Contribute
+1. **Before starting**: Read [AGENTS.md](AGENTS.md) to understand our strict guidelines
+2. **Fork** the repository
+3. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
+4. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+5. **Push** to the branch (`git push origin feature/amazing-feature`)
+6. **Open a Pull Request**
 
-Thanks to the Swift and macOS communities. Let's grow a better email experience—focused, fast, and respectful of your attention.
+### Contribution Rules
+- ✅ **Performance improvements** - Always welcome
+- ✅ **Bug fixes** - Always welcome
+- ✅ **Security enhancements** - Always welcome
+- ⚠️ **New features** - Requires thorough discussion first
+- ❌ **External dependencies** - Will be rejected
+- ❌ **Feature bloat** - Will be rejected
+
+By contributing code, you agree it will be licensed under Apache License 2.0.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+
+## 📝 Roadmap
+
+### Phase 1: Foundation (In Progress) 🚧
+- [x] Architecture design
+- [x] Development guidelines (AGENTS.md)
+- [x] SQLite database layer (PRAGMA optimizations & FTS)
+- [x] Basic UI structure (AppKit three-pane skeleton)
+- [x] Account management model
+
+### Phase 2: Core Email Features
+- [ ] IMAP implementation
+- [ ] POP3 implementation
+- [ ] Message parser (RFC822)
+- [ ] Message display
+- [ ] Compose & send
+
+### Phase 3: Essential Features
+- [ ] Local search (FTS5)
+- [ ] Keyboard shortcuts
+- [ ] Multiple accounts
+- [ ] Offline mode
+- [ ] Attachment handling
+
+### Phase 4: Polish
+- [ ] Performance optimization
+- [ ] Memory optimization
+- [ ] Accessibility (VoiceOver)
+- [ ] Error handling
+- [ ] Auto-update mechanism
+
+### Phase 5: Release
+- [ ] Testing & bug fixes
+- [ ] Documentation
+- [ ] App Store submission
+- [ ] Website launch
+
+### What We'll Never Implement
+- Calendar integration
+- Task management
+- Plugins & extensions
+- Themes (beyond system dark/light)
+- AI & machine learning features
+- Social media integration
+
+## 📄 License
+
+SwiftMail is released under the Apache License 2.0. See [LICENSE](LICENSE) for details.
+
+### Why Apache 2.0?
+- **Patent protection**: Protects users and contributors from patent lawsuits
+- **Enterprise-friendly**: Clear legal terms, widely accepted in corporate environments
+- **App Store compatible**: No issues distributing on Mac App Store
+- **Contributor protection**: Shields contributors from warranty/liability claims
+- **Swift compatibility**: Apple uses Apache 2.0 for Swift itself
+
+This means you can:
+- ✅ Use commercially
+- ✅ Modify & distribute
+- ✅ Create proprietary forks
+- ✅ Embed in closed-source projects
+- ⚠️ Must preserve original license & notices
+- ⚠️ Must state significant changes
+
+## 💬 Support & Community
+
+- **Issues**: [GitHub Issues](https://github.com/ayumuwall/SwiftMail/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ayumuwall/SwiftMail/discussions)
+- **Dev Chat**: Coming soon
+- **Security**: Report vulnerabilities via GitHub Security tab
+
+## 🌟 Why SwiftMail?
+
+What we believe an email client should be:
+- **Fast** - Instant launch, instant search
+- **Focused** - Just email, no distractions
+- **Respectful** - Of your system resources and privacy
+
+If this vision resonates with you, let's build it together.
