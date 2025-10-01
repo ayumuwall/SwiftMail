@@ -45,6 +45,7 @@ final class AccountListViewController: NSViewController {
     private var accounts: [Account] = []
     var onAccountSelected: ((Account) -> Void)?
     var onAccountsChanged: (([Account]) -> Void)?
+    var onAccountDeleted: ((String) -> Void)?
 
     // MARK: - Lifecycle
 
@@ -127,14 +128,18 @@ final class AccountListViewController: NSViewController {
         alert.addButton(withTitle: "キャンセル")
 
         if alert.runModal() == .alertFirstButtonReturn {
-            accounts.remove(at: selectedRow)
-            tableView.removeRows(at: IndexSet(integer: selectedRow), withAnimation: .slideUp)
-            updateButtonStates()
-            onAccountsChanged?(accounts)
-
             // Keychainからパスワードを削除
             let keychainManager = KeychainManager()
             try? keychainManager.deletePassword(for: account.id)
+
+            // 配列から削除
+            accounts.remove(at: selectedRow)
+            tableView.removeRows(at: IndexSet(integer: selectedRow), withAnimation: .slideUp)
+            updateButtonStates()
+
+            // 削除されたアカウントIDを通知
+            onAccountDeleted?(account.id)
+            onAccountsChanged?(accounts)
         }
     }
 
@@ -155,7 +160,7 @@ final class AccountListViewController: NSViewController {
         let window = NSWindow(contentViewController: settingsVC)
         window.title = account == nil ? "アカウント追加" : "アカウント編集"
         window.styleMask = [.titled, .closable]
-        window.setContentSize(NSSize(width: 500, height: 600))
+        window.setContentSize(NSSize(width: 480, height: 520))
         window.center()
 
         settingsVC.onSave = { [weak self, weak window] savedAccount in

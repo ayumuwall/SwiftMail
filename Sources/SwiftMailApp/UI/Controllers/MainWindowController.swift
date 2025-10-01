@@ -69,6 +69,23 @@ final class MainWindowController: NSWindowController {
             }
         }
 
+        // アカウント削除時の処理
+        accountListVC.onAccountDeleted = { [weak self] accountId in
+            guard let self = self else { return }
+            Task.detached {
+                do {
+                    try self.environment.repository.removeAccount(by: accountId)
+                    print("✅ アカウント削除: \(accountId)")
+                    // メインビューを更新（0件の場合は「アカウントなし」表示に切り替わる）
+                    await MainActor.run {
+                        self.splitViewController?.refreshData()
+                    }
+                } catch {
+                    print("⚠️ アカウント削除エラー: \(error)")
+                }
+            }
+        }
+
         // アカウント変更時の処理
         accountListVC.onAccountsChanged = { [weak self] accounts in
             guard let self = self else { return }

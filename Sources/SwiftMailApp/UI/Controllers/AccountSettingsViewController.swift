@@ -45,10 +45,11 @@ final class AccountSettingsViewController: NSViewController {
 
     private lazy var accountNameLabel = Self.createLabel("アカウント名:")
     private lazy var emailLabel = Self.createLabel("メールアドレス:")
-    private lazy var imapHostLabel = Self.createLabel("IMAPサーバー:")
-    private lazy var imapPortLabel = Self.createLabel("IMAPポート:")
-    private lazy var smtpHostLabel = Self.createLabel("SMTPサーバー:")
-    private lazy var smtpPortLabel = Self.createLabel("SMTPポート:")
+    private lazy var serverTypeLabel = Self.createLabel("プロトコル:")
+    private lazy var receiveHostLabel = Self.createLabel("受信サーバー:")
+    private lazy var receivePortLabel = Self.createLabel("受信ポート:")
+    private lazy var smtpHostLabel = Self.createLabel("送信サーバー:")
+    private lazy var smtpPortLabel = Self.createLabel("送信ポート:")
     private lazy var usernameLabel = Self.createLabel("ユーザー名:")
     private lazy var passwordLabel = Self.createLabel("パスワード:")
 
@@ -66,14 +67,30 @@ final class AccountSettingsViewController: NSViewController {
         return field
     }()
 
-    private let imapHostField: NSTextField = {
+    private lazy var serverTypePopUp: NSPopUpButton = {
+        let button = NSPopUpButton()
+        button.addItems(withTitles: ["IMAP", "POP3"])
+        button.target = self
+        button.action = #selector(serverTypeChanged)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
+    }()
+
+    private lazy var serverTypeHeaderLabel: NSTextField = {
+        let label = NSTextField(labelWithString: "")
+        label.font = NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    private let receiveHostField: NSTextField = {
         let field = ASCIIOnlyTextField()
         field.placeholderString = "imap.example.com"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
     }()
 
-    private let imapPortField: NSTextField = {
+    private let receivePortField: NSTextField = {
         let field = ASCIIOnlyTextField()
         field.placeholderString = "993"
         field.translatesAutoresizingMaskIntoConstraints = false
@@ -108,7 +125,7 @@ final class AccountSettingsViewController: NSViewController {
         return field
     }()
 
-    private let imapTLSCheckbox: NSButton = {
+    private let receiveTLSCheckbox: NSButton = {
         let button = NSButton(checkboxWithTitle: "TLS/SSL使用", target: nil, action: nil)
         button.state = .on
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -151,6 +168,7 @@ final class AccountSettingsViewController: NSViewController {
     var onSave: ((Account) -> Void)?
     var onCancel: (() -> Void)?
     private var editingAccount: Account?
+    private var isEditMode = false
 
     // MARK: - Lifecycle
 
@@ -172,29 +190,23 @@ final class AccountSettingsViewController: NSViewController {
 
         let scrollView = NSScrollView()
         scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.hasVerticalScroller = true
+        scrollView.hasVerticalScroller = false
+        scrollView.hasHorizontalScroller = false
         scrollView.drawsBackground = false
+
+        // Protocol Type Section (at the top of window, outside scroll view)
+        let protocolHeaderView = NSView()
+        protocolHeaderView.translatesAutoresizingMaskIntoConstraints = false
+        protocolHeaderView.wantsLayer = true
+        protocolHeaderView.layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+
+        view.addSubview(protocolHeaderView)
+        protocolHeaderView.addSubview(serverTypeLabel)
+        protocolHeaderView.addSubview(serverTypePopUp)
+        protocolHeaderView.addSubview(serverTypeHeaderLabel)
 
         let contentView = NSView()
         contentView.translatesAutoresizingMaskIntoConstraints = false
-
-        // IMAP Section
-        let imapLabel = Self.createSectionLabel("IMAP設定（受信）")
-        contentView.addSubview(imapLabel)
-        contentView.addSubview(imapHostLabel)
-        contentView.addSubview(imapHostField)
-        contentView.addSubview(imapPortLabel)
-        contentView.addSubview(imapPortField)
-        contentView.addSubview(imapTLSCheckbox)
-
-        // SMTP Section
-        let smtpLabel = Self.createSectionLabel("SMTP設定（送信）")
-        contentView.addSubview(smtpLabel)
-        contentView.addSubview(smtpHostLabel)
-        contentView.addSubview(smtpHostField)
-        contentView.addSubview(smtpPortLabel)
-        contentView.addSubview(smtpPortField)
-        contentView.addSubview(smtpTLSCheckbox)
 
         // Account Info Section
         let accountLabel = Self.createSectionLabel("アカウント情報")
@@ -208,6 +220,24 @@ final class AccountSettingsViewController: NSViewController {
         contentView.addSubview(passwordLabel)
         contentView.addSubview(passwordField)
 
+        // Receive Section
+        let receiveLabel = Self.createSectionLabel("受信")
+        contentView.addSubview(receiveLabel)
+        contentView.addSubview(receiveHostLabel)
+        contentView.addSubview(receiveHostField)
+        contentView.addSubview(receivePortLabel)
+        contentView.addSubview(receivePortField)
+        contentView.addSubview(receiveTLSCheckbox)
+
+        // Send Section
+        let smtpLabel = Self.createSectionLabel("送信")
+        contentView.addSubview(smtpLabel)
+        contentView.addSubview(smtpHostLabel)
+        contentView.addSubview(smtpHostField)
+        contentView.addSubview(smtpPortLabel)
+        contentView.addSubview(smtpPortField)
+        contentView.addSubview(smtpTLSCheckbox)
+
         // Buttons
         let buttonStack = NSStackView(views: [testButton, cancelButton, saveButton])
         buttonStack.orientation = .horizontal
@@ -220,9 +250,31 @@ final class AccountSettingsViewController: NSViewController {
 
         let labelWidth: CGFloat = 120
         let fieldLeading: CGFloat = 140
-        let margin: CGFloat = 16
+        let fieldWidth: CGFloat = 280
+        let margin: CGFloat = 20
+        let protocolHeaderHeight: CGFloat = 40
+        let bottomMargin: CGFloat = 12
 
-        var currentY: CGFloat = margin
+        // Protocol Header Layout
+        NSLayoutConstraint.activate([
+            protocolHeaderView.topAnchor.constraint(equalTo: view.topAnchor),
+            protocolHeaderView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            protocolHeaderView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            protocolHeaderView.heightAnchor.constraint(equalToConstant: protocolHeaderHeight),
+
+            serverTypeLabel.centerYAnchor.constraint(equalTo: protocolHeaderView.centerYAnchor),
+            serverTypeLabel.leadingAnchor.constraint(equalTo: protocolHeaderView.leadingAnchor, constant: margin),
+            serverTypeLabel.widthAnchor.constraint(equalToConstant: labelWidth),
+
+            serverTypePopUp.centerYAnchor.constraint(equalTo: protocolHeaderView.centerYAnchor),
+            serverTypePopUp.leadingAnchor.constraint(equalTo: protocolHeaderView.leadingAnchor, constant: fieldLeading),
+            serverTypePopUp.widthAnchor.constraint(equalToConstant: 150),
+
+            serverTypeHeaderLabel.centerYAnchor.constraint(equalTo: protocolHeaderView.centerYAnchor),
+            serverTypeHeaderLabel.leadingAnchor.constraint(equalTo: protocolHeaderView.leadingAnchor, constant: fieldLeading)
+        ])
+
+        var currentY: CGFloat = 8
 
         // Account Info
         NSLayoutConstraint.activate([
@@ -230,7 +282,7 @@ final class AccountSettingsViewController: NSViewController {
             accountLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: margin),
             accountLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin)
         ])
-        currentY += 30
+        currentY += 26
 
         NSLayoutConstraint.activate([
             accountNameLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
@@ -239,9 +291,9 @@ final class AccountSettingsViewController: NSViewController {
 
             accountNameField.centerYAnchor.constraint(equalTo: accountNameLabel.centerYAnchor),
             accountNameField.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: fieldLeading),
-            accountNameField.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -margin)
+            accountNameField.widthAnchor.constraint(equalToConstant: fieldWidth)
         ])
-        currentY += 32
+        currentY += 28
 
         NSLayoutConstraint.activate([
             emailLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
@@ -250,9 +302,9 @@ final class AccountSettingsViewController: NSViewController {
 
             emailField.centerYAnchor.constraint(equalTo: emailLabel.centerYAnchor),
             emailField.leadingAnchor.constraint(equalTo: accountNameField.leadingAnchor),
-            emailField.trailingAnchor.constraint(equalTo: accountNameField.trailingAnchor)
+            emailField.widthAnchor.constraint(equalTo: accountNameField.widthAnchor)
         ])
-        currentY += 32
+        currentY += 28
 
         NSLayoutConstraint.activate([
             usernameLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
@@ -261,9 +313,9 @@ final class AccountSettingsViewController: NSViewController {
 
             usernameField.centerYAnchor.constraint(equalTo: usernameLabel.centerYAnchor),
             usernameField.leadingAnchor.constraint(equalTo: accountNameField.leadingAnchor),
-            usernameField.trailingAnchor.constraint(equalTo: accountNameField.trailingAnchor)
+            usernameField.widthAnchor.constraint(equalTo: accountNameField.widthAnchor)
         ])
-        currentY += 32
+        currentY += 28
 
         NSLayoutConstraint.activate([
             passwordLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
@@ -272,50 +324,50 @@ final class AccountSettingsViewController: NSViewController {
 
             passwordField.centerYAnchor.constraint(equalTo: passwordLabel.centerYAnchor),
             passwordField.leadingAnchor.constraint(equalTo: accountNameField.leadingAnchor),
-            passwordField.trailingAnchor.constraint(equalTo: accountNameField.trailingAnchor)
+            passwordField.widthAnchor.constraint(equalTo: accountNameField.widthAnchor)
         ])
-        currentY += 44
+        currentY += 38
 
-        // IMAP Section
+        // Receive Section
         NSLayoutConstraint.activate([
-            imapLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
-            imapLabel.leadingAnchor.constraint(equalTo: accountLabel.leadingAnchor),
-            imapLabel.trailingAnchor.constraint(equalTo: accountLabel.trailingAnchor)
+            receiveLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
+            receiveLabel.leadingAnchor.constraint(equalTo: accountLabel.leadingAnchor),
+            receiveLabel.trailingAnchor.constraint(equalTo: accountLabel.trailingAnchor)
         ])
-        currentY += 30
-
-        NSLayoutConstraint.activate([
-            imapHostLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
-            imapHostLabel.leadingAnchor.constraint(equalTo: accountNameLabel.leadingAnchor),
-            imapHostLabel.widthAnchor.constraint(equalTo: accountNameLabel.widthAnchor),
-
-            imapHostField.centerYAnchor.constraint(equalTo: imapHostLabel.centerYAnchor),
-            imapHostField.leadingAnchor.constraint(equalTo: accountNameField.leadingAnchor),
-            imapHostField.trailingAnchor.constraint(equalTo: accountNameField.trailingAnchor)
-        ])
-        currentY += 32
+        currentY += 26
 
         NSLayoutConstraint.activate([
-            imapPortLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
-            imapPortLabel.leadingAnchor.constraint(equalTo: accountNameLabel.leadingAnchor),
-            imapPortLabel.widthAnchor.constraint(equalTo: accountNameLabel.widthAnchor),
+            receiveHostLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
+            receiveHostLabel.leadingAnchor.constraint(equalTo: accountNameLabel.leadingAnchor),
+            receiveHostLabel.widthAnchor.constraint(equalTo: accountNameLabel.widthAnchor),
 
-            imapPortField.centerYAnchor.constraint(equalTo: imapPortLabel.centerYAnchor),
-            imapPortField.leadingAnchor.constraint(equalTo: accountNameField.leadingAnchor),
-            imapPortField.widthAnchor.constraint(equalToConstant: 100),
-
-            imapTLSCheckbox.centerYAnchor.constraint(equalTo: imapPortLabel.centerYAnchor),
-            imapTLSCheckbox.leadingAnchor.constraint(equalTo: imapPortField.trailingAnchor, constant: 16)
+            receiveHostField.centerYAnchor.constraint(equalTo: receiveHostLabel.centerYAnchor),
+            receiveHostField.leadingAnchor.constraint(equalTo: accountNameField.leadingAnchor),
+            receiveHostField.widthAnchor.constraint(equalTo: accountNameField.widthAnchor)
         ])
-        currentY += 44
+        currentY += 28
 
-        // SMTP Section
+        NSLayoutConstraint.activate([
+            receivePortLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
+            receivePortLabel.leadingAnchor.constraint(equalTo: accountNameLabel.leadingAnchor),
+            receivePortLabel.widthAnchor.constraint(equalTo: accountNameLabel.widthAnchor),
+
+            receivePortField.centerYAnchor.constraint(equalTo: receivePortLabel.centerYAnchor),
+            receivePortField.leadingAnchor.constraint(equalTo: accountNameField.leadingAnchor),
+            receivePortField.widthAnchor.constraint(equalToConstant: 100),
+
+            receiveTLSCheckbox.centerYAnchor.constraint(equalTo: receivePortLabel.centerYAnchor),
+            receiveTLSCheckbox.leadingAnchor.constraint(equalTo: receivePortField.trailingAnchor, constant: 16)
+        ])
+        currentY += 38
+
+        // Send Section
         NSLayoutConstraint.activate([
             smtpLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
             smtpLabel.leadingAnchor.constraint(equalTo: accountLabel.leadingAnchor),
             smtpLabel.trailingAnchor.constraint(equalTo: accountLabel.trailingAnchor)
         ])
-        currentY += 30
+        currentY += 26
 
         NSLayoutConstraint.activate([
             smtpHostLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
@@ -324,9 +376,9 @@ final class AccountSettingsViewController: NSViewController {
 
             smtpHostField.centerYAnchor.constraint(equalTo: smtpHostLabel.centerYAnchor),
             smtpHostField.leadingAnchor.constraint(equalTo: accountNameField.leadingAnchor),
-            smtpHostField.trailingAnchor.constraint(equalTo: accountNameField.trailingAnchor)
+            smtpHostField.widthAnchor.constraint(equalTo: accountNameField.widthAnchor)
         ])
-        currentY += 32
+        currentY += 28
 
         NSLayoutConstraint.activate([
             smtpPortLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: currentY),
@@ -340,19 +392,19 @@ final class AccountSettingsViewController: NSViewController {
             smtpTLSCheckbox.centerYAnchor.constraint(equalTo: smtpPortLabel.centerYAnchor),
             smtpTLSCheckbox.leadingAnchor.constraint(equalTo: smtpPortField.trailingAnchor, constant: 16)
         ])
-        currentY += 44
+        currentY += 32
 
         NSLayoutConstraint.activate([
             contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
             contentView.heightAnchor.constraint(equalToConstant: currentY),
 
-            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.topAnchor.constraint(equalTo: protocolHeaderView.bottomAnchor, constant: 4),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: buttonStack.topAnchor, constant: -margin),
+            scrollView.bottomAnchor.constraint(equalTo: buttonStack.topAnchor, constant: -8),
 
             buttonStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -margin),
-            buttonStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -margin)
+            buttonStack.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -bottomMargin)
         ])
     }
 
@@ -371,8 +423,26 @@ final class AccountSettingsViewController: NSViewController {
     }
 
     private func populateDefaultValues() {
-        imapPortField.stringValue = "993"
+        receivePortField.stringValue = "993"
         smtpPortField.stringValue = "587"
+        updateServerTypeDisplay()
+    }
+
+    private func updateServerTypeDisplay() {
+        if isEditMode {
+            // 編集モード: PopUpを非表示、見出しを表示
+            serverTypeLabel.isHidden = false
+            serverTypePopUp.isHidden = true
+            serverTypeHeaderLabel.isHidden = false
+
+            let typeText = serverTypePopUp.indexOfSelectedItem == 0 ? "IMAPアカウント" : "POP3アカウント"
+            serverTypeHeaderLabel.stringValue = typeText
+        } else {
+            // 新規作成モード: PopUpを表示、見出しを非表示
+            serverTypeLabel.isHidden = false
+            serverTypePopUp.isHidden = false
+            serverTypeHeaderLabel.isHidden = true
+        }
     }
 
     // MARK: - Actions
@@ -404,6 +474,10 @@ final class AccountSettingsViewController: NSViewController {
         showAlert(title: "接続テスト", message: "接続テスト機能は実装予定です")
     }
 
+    @objc private func serverTypeChanged() {
+        // プロトコル変更時の処理（必要に応じて実装）
+    }
+
     // MARK: - Helpers
 
     private func validateAndCreateAccount() -> Account? {
@@ -412,23 +486,25 @@ final class AccountSettingsViewController: NSViewController {
             return nil
         }
 
-        guard !imapHostField.stringValue.isEmpty else {
-            showAlert(title: "入力エラー", message: "IMAPサーバーを入力してください")
+        let selectedServerType: Account.ServerType = serverTypePopUp.indexOfSelectedItem == 0 ? .imap : .pop3
+
+        guard !receiveHostField.stringValue.isEmpty else {
+            showAlert(title: "入力エラー", message: "受信サーバーを入力してください")
+            return nil
+        }
+
+        guard let receivePort = Int(receivePortField.stringValue), receivePort > 0, receivePort < 65536 else {
+            showAlert(title: "入力エラー", message: "有効な受信ポート番号を入力してください")
             return nil
         }
 
         guard !smtpHostField.stringValue.isEmpty else {
-            showAlert(title: "入力エラー", message: "SMTPサーバーを入力してください")
-            return nil
-        }
-
-        guard let imapPort = Int(imapPortField.stringValue), imapPort > 0, imapPort < 65536 else {
-            showAlert(title: "入力エラー", message: "有効なIMAPポート番号を入力してください")
+            showAlert(title: "入力エラー", message: "送信サーバーを入力してください")
             return nil
         }
 
         guard let smtpPort = Int(smtpPortField.stringValue), smtpPort > 0, smtpPort < 65536 else {
-            showAlert(title: "入力エラー", message: "有効なSMTPポート番号を入力してください")
+            showAlert(title: "入力エラー", message: "有効な送信ポート番号を入力してください")
             return nil
         }
 
@@ -437,9 +513,9 @@ final class AccountSettingsViewController: NSViewController {
         return Account(
             id: accountId,
             email: emailField.stringValue,
-            serverType: .imap,
-            imapHost: imapHostField.stringValue,
-            imapPort: imapPort,
+            serverType: selectedServerType,
+            imapHost: receiveHostField.stringValue,
+            imapPort: receivePort,
             smtpHost: smtpHostField.stringValue,
             smtpPort: smtpPort
         )
@@ -458,19 +534,27 @@ final class AccountSettingsViewController: NSViewController {
 
     func setAccount(_ account: Account) {
         editingAccount = account
+        isEditMode = true
+
         accountNameField.stringValue = account.email
         emailField.stringValue = account.email
-        imapHostField.stringValue = account.imapHost ?? ""
-        imapPortField.stringValue = "\(account.imapPort)"
-        imapTLSCheckbox.state = .on
+        receiveHostField.stringValue = account.imapHost ?? ""
+        receivePortField.stringValue = "\(account.imapPort)"
+        receiveTLSCheckbox.state = .on
         smtpHostField.stringValue = account.smtpHost
         smtpPortField.stringValue = "\(account.smtpPort)"
         smtpTLSCheckbox.state = .on
         usernameField.stringValue = account.email
 
+        // サーバータイプを設定
+        serverTypePopUp.selectItem(at: account.serverType == .imap ? 0 : 1)
+
         // パスワードをKeychainから取得
         if let password = try? keychainManager.retrievePassword(for: account.id) {
             passwordField.stringValue = password
         }
+
+        // UI更新
+        updateServerTypeDisplay()
     }
 }
