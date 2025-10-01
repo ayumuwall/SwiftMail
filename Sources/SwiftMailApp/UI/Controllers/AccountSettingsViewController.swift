@@ -1,6 +1,34 @@
 import AppKit
 import SwiftMailCore
 
+/// コピー&ペースト可能なセキュアテキストフィールド
+final class CopyableSecureTextField: NSSecureTextField {
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        // Cmd+C (Copy), Cmd+V (Paste), Cmd+X (Cut) を許可
+        if event.modifierFlags.contains(.command) {
+            if let characters = event.charactersIgnoringModifiers {
+                if characters == "c" || characters == "v" || characters == "x" || characters == "a" {
+                    return super.performKeyEquivalent(with: event)
+                }
+            }
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    override func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
+        // コピー、ペースト、カットメニューを有効化
+        if let action = item.action {
+            if action == #selector(NSText.copy(_:)) ||
+               action == #selector(NSText.paste(_:)) ||
+               action == #selector(NSText.cut(_:)) ||
+               action == #selector(NSText.selectAll(_:)) {
+                return true
+            }
+        }
+        return super.validateUserInterfaceItem(item)
+    }
+}
+
 @MainActor
 final class AccountSettingsViewController: NSViewController {
 
@@ -65,7 +93,7 @@ final class AccountSettingsViewController: NSViewController {
     }()
 
     private let passwordField: NSSecureTextField = {
-        let field = NSSecureTextField()
+        let field = CopyableSecureTextField()
         field.placeholderString = "パスワード"
         field.translatesAutoresizingMaskIntoConstraints = false
         return field
