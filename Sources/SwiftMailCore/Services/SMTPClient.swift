@@ -87,6 +87,7 @@ public final class SMTPClient: @unchecked Sendable {
 
         // サーバーのグリーティングを読み取る（220 ...）
         let greeting = try await receiveResponse()
+        debugPrint("SMTP <- \(greeting)")
         guard greeting.hasPrefix("220") else {
             throw SMTPError.invalidResponse(greeting)
         }
@@ -94,11 +95,26 @@ public final class SMTPClient: @unchecked Sendable {
 
     /// サーバーから切断
     public func disconnect() async throws {
-        if isConnected {
-            _ = try? await sendCommand("QUIT")
+        guard let connection else {
+            isConnected = false
+            return
         }
-        connection?.cancel()
-        connection = nil
+
+        if isConnected {
+            let quitData = Data("QUIT\r\n".utf8)
+            try? await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                connection.send(content: quitData, completion: .contentProcessed { error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume()
+                    }
+                })
+            }
+        }
+
+        connection.cancel()
+        self.connection = nil
         isConnected = false
     }
 
@@ -111,6 +127,7 @@ public final class SMTPClient: @unchecked Sendable {
         }
 
         let response = try await sendCommand("EHLO \(domain)")
+        debugPrint("SMTP <- \(response)")
         guard response.hasPrefix("250") else {
             throw SMTPError.invalidResponse(response)
         }
@@ -156,7 +173,7 @@ public final class SMTPClient: @unchecked Sendable {
 
         // Base64エンコードされたパスワードを送信
         let passwordBase64 = Data(password.utf8).base64EncodedString()
-        let passResponse = try await sendCommand(passwordBase64)
+        let passResponse = try await sendCommand(passwordBase64, obfuscate: true)
         guard passResponse.hasPrefix("235") else {
             throw SMTPError.authenticationFailed
         }
@@ -208,7 +225,7 @@ public final class SMTPClient: @unchecked Sendable {
 
     // MARK: - Private Helpers
 
-    private func sendCommand(_ command: String) async throws -> String {
+    private func sendCommand(_ command: String, obfuscate: Bool = false) async throws -> String {
         guard let connection = connection else {
             throw SMTPError.notConnected
         }
@@ -217,9 +234,15 @@ public final class SMTPClient: @unchecked Sendable {
         let commandWithCRLF = command + "\r\n"
         let data = commandWithCRLF.data(using: .utf8)!
 
+        if obfuscate {
+            debugPrint("SMTP -> [redacted]")
+        } else {
+            debugPrint("SMTP -> \(command)")
+        }
+
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             connection.send(content: data, completion: .contentProcessed { error in
-                if let error = error {
+                if let error {
                     continuation.resume(throwing: error)
                 } else {
                     continuation.resume()
@@ -228,7 +251,9 @@ public final class SMTPClient: @unchecked Sendable {
         }
 
         // レスポンス受信
-        return try await receiveResponse()
+        let response = try await receiveResponse()
+        debugPrint("SMTP <- \(response)")
+        return response
     }
 
     private func receiveResponse() async throws -> String {
@@ -241,12 +266,12 @@ public final class SMTPClient: @unchecked Sendable {
         let maxIterations = 100 // 無限ループ防止
 
         // マルチラインレスポンス対応（250-... と 250 ...）
-        while iterationCount < maxIterations {
+        outerLoop: while iterationCount < maxIterations {
             iterationCount += 1
 
             let chunk = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
                 connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, _, error in
-                    if let error = error {
+                    if let error {
                         continuation.resume(throwing: error)
                     } else if let data = data, let response = String(data: data, encoding: .utf8) {
                         continuation.resume(returning: response)
@@ -256,30 +281,21 @@ public final class SMTPClient: @unchecked Sendable {
                 }
             }
 
+            if chunk.isEmpty {
+                break
+            }
+
             fullResponse += chunk
 
             // 改行が含まれている場合のみ判定
             if fullResponse.contains("\r\n") {
-                // マルチライン判定（"250-" → 続く、"250 " → 終了）
                 let lines = fullResponse.components(separatedBy: "\r\n")
-                if let lastLine = lines.last, lastLine.count >= 4 {
-                    let separator = lastLine.dropFirst(3).prefix(1)
-
-                    // スペースで終了（単一行または最終行）
-                    if separator == " " {
-                        break
-                    }
-                }
-
-                // 単一行レスポンス（220, 354など）
-                if lines.count >= 2 && lines[0].count >= 3 {
-                    let firstLineCode = String(lines[0].prefix(3))
-                    // 3桁のコード + スペース/ハイフン以外の文字がある場合は単一行
-                    if Int(firstLineCode) != nil && lines[0].count >= 4 {
-                        let separator = lines[0].dropFirst(3).prefix(1)
-                        if separator == " " {
-                            break
-                        }
+                for line in lines where line.count >= 4 {
+                    let codePrefix = line.prefix(3)
+                    guard Int(codePrefix) != nil else { continue }
+                    let separatorIndex = line.index(line.startIndex, offsetBy: 3)
+                    if line[separatorIndex] == " " {
+                        break outerLoop
                     }
                 }
             }

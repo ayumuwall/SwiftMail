@@ -73,6 +73,7 @@ public final class MailSyncService: Sendable {
         let folderNames: [String]
         do {
             folderNames = try await client.listFolders()
+            debugPrint("IMAP sync: fetched folders \(folderNames)")
         } catch {
             client.disconnect()
             throw SyncError.connectionFailed(error)
@@ -84,6 +85,7 @@ public final class MailSyncService: Sendable {
         for folderName in folderNames {
             do {
                 let folderInfo = try await client.selectFolder(folderName)
+                debugPrint("IMAP sync: folder \(folderName) has \(folderInfo.messageCount) messages")
 
                 // フォルダーをデータベースに保存
                 let folder = IMAPFolder(
@@ -99,10 +101,9 @@ public final class MailSyncService: Sendable {
                     let count = min(folderInfo.messageCount, 50)
                     let headers = try await client.fetchHeaders(range: 1...count)
 
-                    // 簡易実装: 最初のヘッダーのみパース
-                    // TODO: 実際は全メッセージを個別に取得・パース
-                    if let headerText = headers.first {
-                        if let parsedMessage = try? messageParser.parse(rawMessage: headerText) {
+                    for (index, headerText) in headers.enumerated() {
+                        do {
+                            let parsedMessage = try messageParser.parse(rawMessage: headerText)
                             let message = Message(
                                 id: parsedMessage.messageId ?? UUID().uuidString,
                                 accountID: account.id,
@@ -122,7 +123,10 @@ public final class MailSyncService: Sendable {
                                 cachedAt: Date()
                             )
                             try repository.saveMessages([message])
+                            debugPrint("IMAP sync: saved message \(message.subject ?? "(no subject)") in \(folderName) [\(index + 1)/\(headers.count)]")
                             totalSynced += 1
+                        } catch {
+                            debugPrint("IMAP sync: failed to parse message header: \(error) for folder \(folderName)")
                         }
                     }
                 }

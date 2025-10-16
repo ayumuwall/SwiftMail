@@ -80,7 +80,8 @@ public final class POP3Client: @unchecked Sendable {
         }
 
         // サーバーの初期応答を読み取る（+OK ...）
-        _ = try await receiveResponse(expectsMultiline: false)
+        let greeting = try await receiveResponse(expectsMultiline: false)
+        debugPrint("POP3 <- \(greeting.trimmingCharacters(in: .whitespacesAndNewlines))")
     }
 
     /// サーバーから切断
@@ -108,7 +109,7 @@ public final class POP3Client: @unchecked Sendable {
         }
 
         // PASS コマンド
-        let passResponse = try await sendCommand("PASS \(password)")
+        let passResponse = try await sendCommand("PASS \(password)", obfuscate: true)
         guard passResponse.hasPrefix("+OK") else {
             throw POP3Error.authenticationFailed
         }
@@ -293,7 +294,7 @@ public final class POP3Client: @unchecked Sendable {
     // MARK: - Private Helpers
 
     @discardableResult
-    private func sendCommand(_ command: String, expectsMultiline: Bool = false) async throws -> String {
+    private func sendCommand(_ command: String, expectsMultiline: Bool = false, obfuscate: Bool = false) async throws -> String {
         guard let connection = connection else {
             throw POP3Error.notConnected
         }
@@ -301,6 +302,12 @@ public final class POP3Client: @unchecked Sendable {
         // コマンド送信（改行付き）
         let commandWithCRLF = command + "\r\n"
         let data = commandWithCRLF.data(using: .utf8)!
+
+        if obfuscate {
+            debugPrint("POP3 -> [redacted]")
+        } else {
+            debugPrint("POP3 -> \(command)")
+        }
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             connection.send(content: data, completion: .contentProcessed { error in
@@ -313,7 +320,9 @@ public final class POP3Client: @unchecked Sendable {
         }
 
         // レスポンス受信
-        return try await receiveResponse(expectsMultiline: expectsMultiline)
+        let response = try await receiveResponse(expectsMultiline: expectsMultiline)
+        debugPrint("POP3 <- \(response.trimmingCharacters(in: .whitespacesAndNewlines))")
+        return response
     }
 
     private func receiveResponse(expectsMultiline: Bool) async throws -> String {

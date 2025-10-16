@@ -59,7 +59,7 @@ public final class IMAPClient: @unchecked Sendable {
 
         connection = NWConnection(to: endpoint, using: parameters)
 
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             connection?.stateUpdateHandler = { [weak self] state in
                 switch state {
                 case .ready:
@@ -78,6 +78,12 @@ public final class IMAPClient: @unchecked Sendable {
             }
 
             connection?.start(queue: .main)
+        }
+
+        let greeting = try await receiveResponse()
+        debugPrint("IMAP <- \(greeting.trimmingCharacters(in: .whitespacesAndNewlines))")
+        guard greeting.contains("OK") else {
+            throw IMAPError.invalidResponse(greeting)
         }
     }
 
@@ -99,7 +105,7 @@ public final class IMAPClient: @unchecked Sendable {
         let tag = nextTag()
         let command = "\(tag) LOGIN \(email) \(password)\r\n"
 
-        let response = try await sendCommand(command)
+        let response = try await sendCommand(command, obfuscate: true)
 
         // レスポンスチェック（簡易実装）
         if !response.contains("\(tag) OK") {
@@ -147,6 +153,7 @@ public final class IMAPClient: @unchecked Sendable {
         let command = "\(tag) SELECT \"\(folderName)\"\r\n"
 
         let response = try await sendCommand(command)
+        debugPrint("IMAP SELECT response:\n\(response)")
 
         // メッセージ数とUIDNEXTを抽出（簡易実装）
         var messageCount = 0
@@ -190,9 +197,14 @@ public final class IMAPClient: @unchecked Sendable {
         let command = "\(tag) FETCH \(range.lowerBound):\(range.upperBound) (BODY.PEEK[HEADER])\r\n"
 
         let response = try await sendCommand(command)
+        debugPrint("IMAP FETCH raw response:\n\(response)")
 
-        // ヘッダーを抽出（簡易実装、実際はより複雑なパース必要）
-        return [response] // TODO: 実際のメッセージごとに分割
+        let extracted = extractHeaders(from: response)
+        if extracted.isEmpty {
+            debugPrint("IMAP FETCH: failed to extract headers, returning raw response")
+            return [response]
+        }
+        return extracted
     }
 
     // MARK: - Private Helpers
@@ -202,13 +214,20 @@ public final class IMAPClient: @unchecked Sendable {
         return "A\(String(format: "%04d", tagCounter))"
     }
 
-    private func sendCommand(_ command: String) async throws -> String {
+    private func sendCommand(_ command: String, obfuscate: Bool = false) async throws -> String {
         guard let connection = connection else {
             throw IMAPError.notConnected
         }
 
         // コマンド送信
         let data = command.data(using: .utf8)!
+
+        if obfuscate {
+            debugPrint("IMAP -> [redacted]")
+        } else {
+            debugPrint("IMAP -> \(command.trimmingCharacters(in: .whitespacesAndNewlines))")
+        }
+
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             connection.send(content: data, completion: .contentProcessed { error in
                 if let error = error {
@@ -220,7 +239,9 @@ public final class IMAPClient: @unchecked Sendable {
         }
 
         // レスポンス受信
-        return try await receiveResponse()
+        let response = try await receiveResponse()
+        debugPrint("IMAP <- \(response.trimmingCharacters(in: .whitespacesAndNewlines))")
+        return response
     }
 
     private func receiveResponse() async throws -> String {
@@ -229,7 +250,7 @@ public final class IMAPClient: @unchecked Sendable {
         }
 
         return try await withCheckedThrowingContinuation { continuation in
-            connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, isComplete, error in
+            connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { data, _, _, error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else if let data = data, let response = String(data: data, encoding: .utf8) {
@@ -239,6 +260,29 @@ public final class IMAPClient: @unchecked Sendable {
                 }
             }
         }
+    }
+
+    private func extractHeaders(from response: String) -> [String] {
+        var headers: [String] = []
+        var searchRange = response.startIndex..<response.endIndex
+
+        while let bodyRange = response.range(of: "BODY[HEADER]", options: [], range: searchRange) {
+            guard let closingBraceRange = response.range(of: "}\r\n", options: [], range: bodyRange.upperBound..<response.endIndex) else {
+                break
+            }
+            let headerStart = closingBraceRange.upperBound
+
+            guard let terminatorRange = response.range(of: "\r\n)\r\n", options: [], range: headerStart..<response.endIndex) else {
+                break
+            }
+
+            let header = String(response[headerStart..<terminatorRange.lowerBound])
+            headers.append(header)
+
+            searchRange = terminatorRange.upperBound..<response.endIndex
+        }
+
+        return headers
     }
 }
 

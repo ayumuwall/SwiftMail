@@ -9,26 +9,22 @@ struct TimeoutError: Error, LocalizedError {
 
 func withTimeout<T: Sendable>(seconds: TimeInterval, operation: @escaping @Sendable () async throws -> T) async throws -> T {
     try await withThrowingTaskGroup(of: T.self) { group in
-        // 操作タスク
         group.addTask {
             try await operation()
         }
 
-        // タイムアウトタスク
         group.addTask {
             try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
             throw TimeoutError()
         }
 
-        // 最初に完了したタスクの結果を取得
-        do {
-            let result = try await group.next()!
-            group.cancelAll() // 残りのタスクをキャンセル
-            return result
-        } catch {
-            group.cancelAll() // エラー時も残りのタスクをキャンセル
-            throw error
+        guard let result = try await group.next() else {
+            group.cancelAll()
+            throw TimeoutError()
         }
+
+        group.cancelAll()
+        return result
     }
 }
 
@@ -459,8 +455,10 @@ final class AccountSettingsViewController: NSViewController {
     }
 
     private func populateDefaultValues() {
-        receivePortField.stringValue = "993"
-        smtpPortField.stringValue = "587"
+        if !isEditMode {
+            receivePortField.stringValue = "993"
+            smtpPortField.stringValue = "587"
+        }
         updateServerTypeDisplay()
     }
 
@@ -540,6 +538,22 @@ final class AccountSettingsViewController: NSViewController {
             return
         }
 
+        let trimmedEmail = emailField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedUsername = usernameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        let loginUsername = trimmedUsername.isEmpty ? trimmedEmail : trimmedUsername
+
+        guard !loginUsername.isEmpty else {
+            showAlert(title: "入力エラー", message: "ユーザー名を入力してください")
+            return
+        }
+
+        let password = passwordField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !password.isEmpty else {
+            showAlert(title: "入力エラー", message: "パスワードを入力してください")
+            return
+        }
+
         // プログレスインジケーターを表示
         showProgressIndicator()
 
@@ -547,58 +561,83 @@ final class AccountSettingsViewController: NSViewController {
         var sendResult = ""
 
         // 受信サーバーテスト
+        let serverTypeIndex = serverTypePopUp.indexOfSelectedItem
+        let serverType = serverTypeIndex == 0 ? "IMAP" : "POP3"
+        let tlsStatus = receiveTLSCheckbox.state == .on ? "TLS有効" : "TLS無効"
+        var activeIMAPClient: IMAPClient?
+        var activePOP3Client: POP3Client?
+
+        updateProgress("""
+        【受信サーバーテスト】
+        プロトコル: \(serverType)
+        ホスト: \(receiveHostField.stringValue)
+        ポート: \(receivePort)
+        セキュリティ: \(tlsStatus)
+
+        接続中...
+        """)
+
         do {
-            let serverType = serverTypePopUp.indexOfSelectedItem == 0 ? "IMAP" : "POP3"
-            let tlsStatus = receiveTLSCheckbox.state == .on ? "TLS有効" : "TLS無効"
-
-            updateProgress("""
-            【受信サーバーテスト】
-            プロトコル: \(serverType)
-            ホスト: \(receiveHostField.stringValue)
-            ポート: \(receivePort)
-            セキュリティ: \(tlsStatus)
-
-            接続中...
-            """)
-
-            if serverType == "IMAP" {
-                let imapClient = IMAPClient(
+            if serverTypeIndex == 0 {
+                let client = IMAPClient(
                     host: receiveHostField.stringValue,
                     port: receivePort,
                     useTLS: receiveTLSCheckbox.state == .on
                 )
-                do {
-                    try await withTimeout(seconds: 10) {
-                        try await imapClient.testConnection()
-                    }
-                    receiveResult = "✅ 受信サーバー (\(serverType)): 接続成功"
-                } catch {
-                    imapClient.disconnect() // タイムアウト時に接続をクリーンアップ
-                    throw error
+                activeIMAPClient = client
+                try await withTimeout(seconds: 10) {
+                    try await client.connect()
+                    try await client.login(email: loginUsername, password: password)
                 }
+                client.disconnect()
+                activeIMAPClient = nil
             } else {
-                let pop3Client = POP3Client(
+                let client = POP3Client(
                     host: receiveHostField.stringValue,
                     port: receivePort,
                     useTLS: receiveTLSCheckbox.state == .on
                 )
-                do {
-                    try await withTimeout(seconds: 10) {
-                        try await pop3Client.testConnection()
-                    }
-                    receiveResult = "✅ 受信サーバー (\(serverType)): 接続成功"
-                } catch {
-                    try? await pop3Client.disconnect() // タイムアウト時に接続をクリーンアップ
-                    throw error
+                activePOP3Client = client
+                try await withTimeout(seconds: 10) {
+                    try await client.connect()
+                    try await client.login(username: loginUsername, password: password)
                 }
+                try await client.disconnect()
+                activePOP3Client = nil
             }
+            receiveResult = "✅ 受信サーバー (\(serverType)): 接続・認証成功"
         } catch is TimeoutError {
+            activeIMAPClient?.disconnect()
+            if let client = activePOP3Client {
+                try? await client.disconnect()
+            }
             receiveResult = "❌ 受信サーバー: 接続タイムアウト（10秒）"
         } catch {
-            receiveResult = "❌ 受信サーバー: 接続失敗\n\(error.localizedDescription)"
+            activeIMAPClient?.disconnect()
+            if let client = activePOP3Client {
+                try? await client.disconnect()
+            }
+            if let imapError = error as? IMAPClient.IMAPError {
+                switch imapError {
+                case .authenticationFailed:
+                    receiveResult = "❌ 受信サーバー: 認証に失敗しました"
+                default:
+                    receiveResult = "❌ 受信サーバー: 接続失敗\n\(imapError.localizedDescription)"
+                }
+            } else if let pop3Error = error as? POP3Client.POP3Error {
+                switch pop3Error {
+                case .authenticationFailed:
+                    receiveResult = "❌ 受信サーバー: 認証に失敗しました"
+                default:
+                    receiveResult = "❌ 受信サーバー: 接続失敗\n\(pop3Error.localizedDescription)"
+                }
+            } else {
+                receiveResult = "❌ 受信サーバー: 接続失敗\n\(error.localizedDescription)"
+            }
         }
 
         // 送信サーバーテスト
+        var smtpClient: SMTPClient?
         do {
             let tlsStatus = smtpTLSCheckbox.state == .on ? "TLS有効" : "TLS無効"
 
@@ -612,19 +651,41 @@ final class AccountSettingsViewController: NSViewController {
             接続中...
             """)
 
-            let smtpClient = SMTPClient(
+            let client = SMTPClient(
                 host: smtpHostField.stringValue,
                 port: smtpPort,
                 useTLS: smtpTLSCheckbox.state == .on
             )
+            smtpClient = client
             try await withTimeout(seconds: 10) {
-                try await smtpClient.testConnection()
+                try await client.connect()
+                try await client.ehlo()
+                try await client.login(username: loginUsername, password: password)
             }
-            sendResult = "✅ 送信サーバー (SMTP): 接続成功"
+            try await client.disconnect()
+            smtpClient = nil
+            sendResult = "✅ 送信サーバー (SMTP): 接続・認証成功"
         } catch is TimeoutError {
+            if let client = smtpClient {
+                try? await client.disconnect()
+                smtpClient = nil
+            }
             sendResult = "❌ 送信サーバー: 接続タイムアウト（10秒）"
         } catch {
-            sendResult = "❌ 送信サーバー: 接続失敗\n\(error.localizedDescription)"
+            if let client = smtpClient {
+                try? await client.disconnect()
+                smtpClient = nil
+            }
+            if let smtpError = error as? SMTPClient.SMTPError {
+                switch smtpError {
+                case .authenticationFailed:
+                    sendResult = "❌ 送信サーバー: 認証に失敗しました"
+                default:
+                    sendResult = "❌ 送信サーバー: 接続失敗\n\(smtpError.localizedDescription)"
+                }
+            } else {
+                sendResult = "❌ 送信サーバー: 接続失敗\n\(error.localizedDescription)"
+            }
         }
 
         // プログレスインジケーターを非表示
